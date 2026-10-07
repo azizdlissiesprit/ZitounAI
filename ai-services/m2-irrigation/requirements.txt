@@ -1,0 +1,10 @@
+fastapi==0.142.2
+uvicorn[standard]==0.54.0
+
+# Uncomment what the final model needs:
+# openmeteo-requests
+# requests-cache
+# retry-requests
+# pandas
+# prophet
+# joblib

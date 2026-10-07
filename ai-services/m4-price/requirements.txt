@@ -1,0 +1,7 @@
+fastapi==0.142.2
+uvicorn[standard]==0.54.0
+
+# Uncomment when the trained model is plugged in:
+# pandas
+# statsmodels
+# joblib

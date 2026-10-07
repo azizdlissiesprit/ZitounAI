@@ -1,0 +1,282 @@
+// Global styles. Keep component styles small (Angular budget: 4 kB per component).
+
+:root {
+  --olive: #5b6b2f;
+  --olive-dark: #3f4a1f;
+  --olive-light: #eef1e3;
+  --bg: #f7f6f1;
+  --surface: #ffffff;
+  --text: #1f2318;
+  --muted: #6b6f63;
+  --border: #dfe0d6;
+  --danger: #b3261e;
+  --warning-bg: #fff4d6;
+  --radius: 10px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+a {
+  color: var(--olive);
+}
+
+h1 {
+  margin: 0 0 0.5rem;
+}
+
+h2 small {
+  font-size: 0.7rem;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.75rem 1rem;
+  background: var(--olive-dark);
+  color: #fff;
+
+  a {
+    color: #fff;
+    text-decoration: none;
+    opacity: 0.85;
+  }
+  a.active {
+    opacity: 1;
+    font-weight: 600;
+  }
+  nav {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .brand {
+    font-weight: 700;
+    opacity: 1;
+  }
+  .muted {
+    color: #d8dcc8;
+  }
+}
+
+.spacer {
+  flex: 1;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.error {
+  color: var(--danger);
+}
+
+.alert {
+  background: var(--warning-bg);
+  padding: 0.5rem;
+  border-radius: 6px;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.card-link {
+  text-decoration: none;
+  color: inherit;
+  &:hover {
+    border-color: var(--olive);
+  }
+  h3,
+  p {
+    margin: 0;
+  }
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.9rem;
+  flex: 1;
+}
+
+label.checkbox {
+  flex-direction: row;
+  align-items: center;
+}
+
+input,
+select {
+  padding: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font: inherit;
+}
+
+.form-row {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.btn {
+  background: var(--olive);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 0.55rem 1rem;
+  font: inherit;
+  cursor: pointer;
+  align-self: flex-start;
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+}
+
+.btn-ghost {
+  background: transparent;
+  color: inherit;
+  border: 1px solid currentColor;
+}
+
+.btn-danger {
+  background: var(--danger);
+}
+
+.badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  vertical-align: middle;
+}
+
+.badge-mock {
+  background: var(--warning-bg);
+  color: #7a5a00;
+  border: 1px solid #f0d58a;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  th,
+  td {
+    text-align: left;
+    padding: 0.35rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  tr.highlight {
+    background: var(--olive-light);
+  }
+  pre {
+    font-size: 0.75rem;
+    max-width: 480px;
+    overflow: auto;
+  }
+}
+
+.preview {
+  max-width: 100%;
+  border-radius: 6px;
+}
+
+.auth-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  form {
+    width: min(400px, 100%);
+  }
+}
+
+.bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 160px;
+  .bar {
+    flex: 1;
+    min-height: 2px;
+    background: #b9bcae;
+  }
+  .bar.forecast {
+    background: var(--olive);
+  }
+}
+
+.chat {
+  min-height: 300px;
+  .bubble {
+    background: var(--olive-light);
+    padding: 0.5rem 0.75rem;
+    border-radius: 10px;
+    max-width: 80%;
+  }
+  .bubble.user {
+    align-self: flex-end;
+    background: var(--olive);
+    color: #fff;
+    .muted {
+      color: #e4e8d4;
+    }
+  }
+}
+
+.chat-input {
+  display: flex;
+  gap: 0.5rem;
+  input {
+    flex: 1;
+  }
+}
+
+.pager {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}

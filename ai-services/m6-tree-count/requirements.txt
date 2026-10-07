@@ -1,0 +1,8 @@
+fastapi==0.142.2
+uvicorn[standard]==0.54.0
+python-multipart==0.0.32
+pillow==12.3.0
+
+# Uncomment when the trained model is plugged in (CPU wheels keep the Docker image small):
+# --extra-index-url https://download.pytorch.org/whl/cpu
+# ultralytics

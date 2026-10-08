@@ -4,11 +4,16 @@ import java.util.List;
 
 import tn.zitouna.ai.AiResult;
 
-/** answeredBy: which module produced the answer (M5 for RAG, M2/M3/M4 when routed). */
+/**
+ * reply: text shown in the chat (derja, arabizi).
+ * suggestions: intents to show as buttons when clarify is true (empty otherwise).
+ * data: raw result of the module that answered (IrrigationResult, PriceResult...), or null.
+ */
 public record ChatResponse(
-        String intent,
-        String answer,
-        String answeredBy,
-        List<AssistantResult.Source> sources,
+        String reply,
+        Intent intent,
+        boolean clarify,
+        List<Intent> suggestions,
+        Object data,
         boolean mock) implements AiResult {
 }

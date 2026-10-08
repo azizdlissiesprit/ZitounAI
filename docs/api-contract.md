@@ -32,7 +32,7 @@ Base URL `/api`. All endpoints except `/api/auth/**` need `Authorization: Bearer
 | GET | `/parcels/{id}/irrigation` | | `IrrigationResult` | M2 |
 | GET | `/parcels/{id}/yield` | optional `?season=2026` | `YieldResult` | M3 |
 | GET | `/ai/price` | `?horizonWeeks=8&quantityKg=` | `PriceResult` | M4 |
-| POST | `/ai/chat` | `{message, parcelId?}` | `{intent, answer, answeredBy, sources, mock}` | M5 (+M2/M3/M4) |
+| POST | `/ai/chat` | `{text, parcelId?, forcedIntent?}` | `{reply, intent, clarify, suggestions, data, mock}` | M5 → M1…M6 / RAG |
 | POST | `/parcels/{id}/count-trees` | multipart `image` | `TreeCountResult` (also saves `treeCount` on the parcel when not mock) | M6 |
 | POST | `/parcels/{id}/harvest-plan` | optional multipart `image` | `HarvestPlan` | M6 → M3 → M4 |
 | GET | `/history` | `?type=DISEASE&page=0&size=20` | `{content: Prediction[], page, size, totalElements, totalPages}` | — |
@@ -147,21 +147,40 @@ Prices are producer prices of olive oil (TND per kg of oil). `recommendation` �
 
 ### M5
 
-`POST /predict`
+`POST /intent` (M5 only exposes `/intent` instead of `/predict`) — `text`: 1 to 500 characters, Arabic script, arabizi or French/derja mix.
 
 ```json
-{ "message": "chnowa na3mel ki el war9a tsfar?" }
+{ "text": "fama jlid ghodwa fi beja?" }
 ```
 
 ```json
 {
-  "intent": "disease", "confidence": 0.9, "answer": null,
-  "sources": [ { "title": "FAO — Guide de production de l'olivier", "url": "https://…" } ],
-  "modelVersion": "mock", "mock": true
+  "intent": "meteo_alerte", "confidence": 0.91, "clarify": false, "question": null,
+  "candidates": [ { "intent": "meteo_alerte", "score": 0.91 }, { "intent": "irrigation", "score": 0.04 },
+                  { "intent": "conseil_general", "score": 0.02 } ],
+  "modelsAgree": true,
+  "entities": { "gouvernorat": "beja" },
+  "modelVersion": "m5_ensemble", "mock": false
 }
 ```
 
-`intent` ∈ `disease | irrigation | yield | price | general`. `answer` is the RAG answer; it may be `null` when another module should answer. The backend (`ChatService`) routes `price` → M4, `irrigation` → M2, `yield` → M3 and falls back to `answer` if that module fails.
+- `intent` ∈ `maladie | irrigation | meteo_alerte | recolte | prix_vente | comptage | conseil_general | salutation | hors_sujet`. When `clarify` is `true`, `intent` is still the best guess and `question` is the question to ask the farmer (derja, arabizi).
+- `candidates`: top 3, best first. `modelsAgree`: TF-IDF and SetFit have the same top intent.
+- `entities.gouvernorat`: canonical id of the governorate cited (`"sfax"`, `"sidi bouzid"`…), or `null`.
+- `mock: true` = keyword fallback (the trained ensemble is not in `MODEL_DIR`).
+
+Routing, done by the backend (`ChatService`): `maladie` → M1, `irrigation` / `meteo_alerte` → M2, `recolte` → M3, `prix_vente` → M4, `comptage` → M6, `conseil_general` → RAG, `salutation` / `hors_sujet` → fixed reply. If M5 is down or slower than 3 s, the backend answers with the generic clarification question.
+
+Backend `POST /api/ai/chat` response:
+
+```json
+{
+  "reply": "Rod belek fi beja: 2026-10-09 — Risque de gel (-1 °C) : protégez les jeunes plants.",
+  "intent": "meteo_alerte", "clarify": false, "suggestions": [], "data": [ { "…": "Alert" } ], "mock": true
+}
+```
+
+With `clarify: true`, `reply` is the question and `suggestions` the intents to show as buttons; clicking one resends the same `text` with `forcedIntent`.
 
 ### M6
 

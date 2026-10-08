@@ -24,7 +24,8 @@ public abstract class AiServiceClient {
 
     protected AiServiceClient(String module, String baseUrl, RestClient.Builder builder, Duration timeout) {
         SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
-        requestFactory.setConnectTimeout(Duration.ofSeconds(5));
+        Duration maxConnect = Duration.ofSeconds(5);
+        requestFactory.setConnectTimeout(timeout.compareTo(maxConnect) < 0 ? timeout : maxConnect);
         requestFactory.setReadTimeout(timeout);
         this.module = module;
         this.http = builder.clone().baseUrl(baseUrl).requestFactory(requestFactory).build();

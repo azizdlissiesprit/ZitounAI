@@ -1,9 +1,19 @@
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from pydantic.alias_generators import to_camel
 
-Intent = Literal["disease", "irrigation", "yield", "price", "general"]
+Intent = Literal[
+    "maladie",
+    "irrigation",
+    "meteo_alerte",
+    "recolte",
+    "prix_vente",
+    "comptage",
+    "conseil_general",
+    "salutation",
+    "hors_sujet",
+]
 
 
 class CamelModel(BaseModel):
@@ -12,19 +22,33 @@ class CamelModel(BaseModel):
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
 
-class ChatRequest(CamelModel):
-    message: str = Field(min_length=1, max_length=1000, examples=["chnowa na3mel ki el war9a tsfar?"])
+class IntentRequest(CamelModel):
+    text: str = Field(min_length=1, max_length=500, examples=["9adech nesgi zitouni had el jem3a?"])
+
+    @field_validator("text")
+    @classmethod
+    def not_blank(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("text must not be blank")
+        return value
 
 
-class Source(CamelModel):
-    title: str
-    url: str | None = None
-
-
-class ChatResponse(CamelModel):
+class Candidate(CamelModel):
     intent: Intent
+    score: float
+
+
+class Entities(CamelModel):
+    gouvernorat: str | None = None
+
+
+class IntentResponse(CamelModel):
+    intent: Intent  # best guess, even when clarify is true
     confidence: float
-    answer: str | None = None  # RAG answer; may be None when another module should answer
-    sources: list[Source] = []
+    clarify: bool
+    question: str | None = None  # question to ask the farmer when clarify is true
+    candidates: list[Candidate]  # top 3, best first
+    models_agree: bool  # TF-IDF and SetFit have the same top intent
+    entities: Entities
     model_version: str
-    mock: bool
+    mock: bool  # true = keyword fallback, the trained ensemble is not loaded

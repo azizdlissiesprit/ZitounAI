@@ -91,7 +91,8 @@ services:
     <<: *ai-service
     build: ./ai-services/m5-assistant
     environment:
-      MODEL_DIR: /models/m5
+      MODEL_DIR: /models/m5_ensemble # TF-IDF + SetFit ensemble (~1 GB, loaded once at startup)
+      PORT: 8000
     ports:
       - "8005:8000"
 

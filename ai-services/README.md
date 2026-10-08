@@ -3,7 +3,7 @@
 One thin FastAPI service per module. Each one loads its trained model and exposes:
 
 - `GET /health`
-- `POST /predict`
+- `POST /predict` (M5 exposes `POST /intent` instead)
 
 No business logic, no database, no calls to other modules: that is the Spring backend's job.
 

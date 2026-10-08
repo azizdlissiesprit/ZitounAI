@@ -1,0 +1,36 @@
+package tn.zitouna.ai.assistant.modules;
+
+import java.util.Locale;
+
+import org.springframework.stereotype.Service;
+
+import lombok.RequiredArgsConstructor;
+import tn.zitouna.ai.cropyield.YieldClient;
+import tn.zitouna.ai.cropyield.YieldResult;
+
+/** recolte -> M3. Uses the existing M3 client (still in mock mode until M3's model is ready). */
+@Service
+@RequiredArgsConstructor
+public class YieldChatService implements YieldService {
+
+    private final YieldClient yieldClient;
+
+    @Override
+    public ModuleAnswer answer(ChatContext ctx) {
+        var location = ctx.location().orElse(null);
+        if (location == null) {
+            return new ModuleAnswer(Replies.ASK_LOCATION, null, false);
+        }
+        Integer trees = ctx.parcel() != null ? ctx.parcel().getTreeCount() : null;
+        YieldResult y = yieldClient.predict(
+                new YieldClient.Request(location.governorate(), YieldClient.currentSeason(), trees));
+
+        String reply = String.format(Locale.ROOT, "Saba mta3 %s (mawsem %d/%d) ≈ %.0f tonne zitoun.",
+                y.governorate(), y.season(), y.season() + 1, y.regionalProductionTonnes());
+        reply += y.parcelEstimateKg() != null
+                ? String.format(Locale.ROOT, " Lel parcelle « %s » (%d chajra): ≈ %.0f kg zitoun (bin %.0f w %.0f).",
+                        location.label(), trees, y.parcelEstimateKg(), y.parcelLowKg(), y.parcelHighKg())
+                : " Ikhtar parcelle fiha 3add el zitoun bech na7seblek saba mte3ek.";
+        return new ModuleAnswer(reply, y, y.mock());
+    }
+}

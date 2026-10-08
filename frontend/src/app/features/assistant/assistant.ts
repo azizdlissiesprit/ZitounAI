@@ -2,39 +2,67 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { AiService } from '../../core/api/ai.service';
-import { Parcel } from '../../core/api/models';
+import { ChatResponse, Intent, Parcel } from '../../core/api/models';
 import { ParcelService } from '../../core/api/parcel.service';
 import { errorMessage } from '../../shared/errors';
 import { MockBadge } from '../../shared/mock-badge';
 
+export const INTENT_LABELS: Record<Intent, string> = {
+  maladie: 'Maladie (mardh)',
+  irrigation: 'Irrigation (sgi)',
+  meteo_alerte: 'Météo (ta9s)',
+  recolte: 'Récolte (saba)',
+  prix_vente: 'Prix (soum)',
+  comptage: "Nombre d'arbres (3add)",
+  conseil_general: 'Conseil général',
+  salutation: 'Salutation',
+  hors_sujet: 'Hors sujet',
+};
+
 interface Message {
   from: 'user' | 'bot';
   text: string;
-  meta?: string;
+  intent?: Intent;
   mock?: boolean;
+  /** Clarification: buttons to pick the intent, and the question they apply to. */
+  suggestions?: Intent[];
+  originalText?: string;
+  answered?: boolean;
 }
 
-/** M5 · Derja assistant (the backend routes questions to M2/M3/M4 when needed) */
+/** M5 · Derja assistant (the backend routes questions to M1-M4, M6 or the RAG) */
 @Component({
   selector: 'app-assistant',
   imports: [FormsModule, MockBadge],
   template: `
     <h1>Assistant</h1>
-    <p class="muted">Posez votre question en derja, en arabizi ou en français.</p>
+    <p class="muted">Posez votre question en derja (arabe ou arabizi) ou en français.</p>
 
     <section class="card chat">
       @for (m of messages(); track $index) {
-        <div class="bubble" [class.user]="m.from === 'user'">
+        <div class="bubble" [class.user]="m.from === 'user'" dir="auto">
           {{ m.text }}
-          @if (m.meta) {
-            <small class="muted"> · {{ m.meta }}</small>
+          @if (m.intent && !m.suggestions) {
+            <small class="muted"> · {{ labels[m.intent] }}</small>
           }
           @if (m.mock) {
             <app-mock-badge [mock]="true" />
           }
+          @if (m.suggestions?.length) {
+            <div class="suggestions">
+              @for (s of m.suggestions; track s) {
+                <button class="btn btn-ghost" type="button" [disabled]="m.answered || loading()" (click)="choose(m, s)">
+                  {{ labels[s] }}
+                </button>
+              }
+            </div>
+          }
         </div>
       } @empty {
-        <p class="muted">Exemple : « chnowa na3mel ki el war9a tsfar? »</p>
+        <p class="muted" dir="auto">Exemples : « 9adech nesgi zitouni had el jem3a? » · « قداش يشريو الزيت اليوم؟ »</p>
+      }
+      @if (loading()) {
+        <p class="muted">…</p>
       }
     </section>
 
@@ -45,7 +73,7 @@ interface Message {
           <option [ngValue]="p.id">{{ p.name }}</option>
         }
       </select>
-      <input [(ngModel)]="draft" name="message" placeholder="Votre question…" autocomplete="off" />
+      <input [(ngModel)]="draft" name="message" placeholder="Votre question…" maxlength="500" dir="auto" autocomplete="off" />
       <button class="btn" type="submit" [disabled]="!draft.trim() || loading()">Envoyer</button>
     </form>
   `,
@@ -54,6 +82,7 @@ export class Assistant implements OnInit {
   private readonly ai = inject(AiService);
   private readonly parcelService = inject(ParcelService);
 
+  protected readonly labels = INTENT_LABELS;
   protected readonly messages = signal<Message[]>([]);
   protected readonly parcels = signal<Parcel[]>([]);
   protected readonly loading = signal(false);
@@ -69,10 +98,21 @@ export class Assistant implements OnInit {
     if (!text) return;
     this.draft = '';
     this.push({ from: 'user', text });
+    this.ask(text);
+  }
+
+  /** The farmer picked an intent: resend the original question, without classification. */
+  choose(message: Message, intent: Intent): void {
+    this.messages.update((list) => list.map((m) => (m === message ? { ...m, answered: true } : m)));
+    this.push({ from: 'user', text: this.labels[intent] });
+    this.ask(message.originalText!, intent);
+  }
+
+  private ask(text: string, forcedIntent?: Intent): void {
     this.loading.set(true);
-    this.ai.chat(text, this.parcelId).subscribe({
+    this.ai.chat({ text, parcelId: this.parcelId ?? null, forcedIntent: forcedIntent ?? null }).subscribe({
       next: (r) => {
-        this.push({ from: 'bot', text: r.answer, meta: `${r.intent} · ${r.answeredBy}`, mock: r.mock });
+        this.push(toMessage(r, text));
         this.loading.set(false);
       },
       error: (err) => {
@@ -85,4 +125,10 @@ export class Assistant implements OnInit {
   private push(message: Message): void {
     this.messages.update((list) => [...list, message]);
   }
+}
+
+function toMessage(r: ChatResponse, originalText: string): Message {
+  return r.clarify
+    ? { from: 'bot', text: r.reply, intent: r.intent, mock: r.mock, suggestions: r.suggestions, originalText }
+    : { from: 'bot', text: r.reply, intent: r.intent, mock: r.mock };
 }

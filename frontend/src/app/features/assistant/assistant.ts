@@ -24,6 +24,8 @@ interface Message {
   text: string;
   intent?: Intent;
   mock?: boolean;
+  /** LLM model that wrote the reply, undefined for template replies. */
+  llm?: string;
   /** Clarification: buttons to pick the intent, and the question they apply to. */
   suggestions?: Intent[];
   originalText?: string;
@@ -43,7 +45,7 @@ interface Message {
         <div class="bubble" [class.user]="m.from === 'user'" dir="auto">
           {{ m.text }}
           @if (m.intent && !m.suggestions) {
-            <small class="muted"> · {{ labels[m.intent] }}</small>
+            <small class="muted"> · {{ labels[m.intent] }}@if (m.llm) { · ✨ {{ m.llm }}}</small>
           }
           @if (m.mock) {
             <app-mock-badge [mock]="true" />
@@ -62,7 +64,7 @@ interface Message {
         <p class="muted" dir="auto">Exemples : « 9adech nesgi zitouni had el jem3a? » · « قداش يشريو الزيت اليوم؟ »</p>
       }
       @if (loading()) {
-        <p class="muted">…</p>
+        <p class="muted">Zitouna tekteb…</p>
       }
     </section>
 
@@ -130,5 +132,10 @@ export class Assistant implements OnInit {
 function toMessage(r: ChatResponse, originalText: string): Message {
   return r.clarify
     ? { from: 'bot', text: r.reply, intent: r.intent, mock: r.mock, suggestions: r.suggestions, originalText }
-    : { from: 'bot', text: r.reply, intent: r.intent, mock: r.mock };
+    : { from: 'bot', text: r.reply, intent: r.intent, mock: r.mock, llm: llmName(r.generatedBy) };
+}
+
+/** "gemini/gemini-3.5-flash" -> "gemini-3.5-flash"; template replies show nothing. */
+function llmName(generatedBy: string | undefined): string | undefined {
+  return generatedBy && generatedBy !== 'template' ? generatedBy.split('/').pop() : undefined;
 }

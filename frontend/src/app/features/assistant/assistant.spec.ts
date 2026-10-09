@@ -44,6 +44,7 @@ describe('Assistant', () => {
       suggestions: ['recolte', 'comptage'],
       data: null,
       mock: false,
+      generatedBy: 'template',
     } satisfies ChatResponse);
     await fixture.whenStable();
 

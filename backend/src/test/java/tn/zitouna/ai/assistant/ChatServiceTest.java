@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 
 import org.junit.jupiter.api.Test;
@@ -28,6 +29,7 @@ import tn.zitouna.ai.assistant.IntentResponse.Candidate;
 import tn.zitouna.ai.assistant.IntentResponse.Entities;
 import tn.zitouna.ai.assistant.modules.ChatContext;
 import tn.zitouna.ai.assistant.modules.DiseaseService;
+import tn.zitouna.ai.assistant.modules.Fact;
 import tn.zitouna.ai.assistant.modules.IrrigationService;
 import tn.zitouna.ai.assistant.modules.ModuleAnswer;
 import tn.zitouna.ai.assistant.modules.PriceService;
@@ -45,6 +47,7 @@ class ChatServiceTest {
     private static final long USER = 7L;
 
     @Mock IntentClient intentClient;
+    @Mock AnswerClient answerClient;
     @Mock ParcelService parcelService;
     @Mock HistoryService historyService;
     @Mock DiseaseService diseaseService;
@@ -92,6 +95,7 @@ class ChatServiceTest {
         assertThat(res.clarify()).isFalse();
         assertThat(res.suggestions()).isEmpty();
         assertThat(res.mock()).isTrue();
+        assertThat(res.generatedBy()).isEqualTo(ChatResponse.TEMPLATE); // no LLM answer -> template
         verify(historyService).record(eq(USER), eq(null), eq(PredictionType.CHAT), any(), eq(res));
     }
 
@@ -102,7 +106,7 @@ class ChatServiceTest {
         assertThat(res.reply()).isEqualTo(ChatService.GREETING);
         assertThat(res.clarify()).isFalse();
         verifyNoInteractions(diseaseService, irrigationService, weatherService, yieldService, priceService,
-                treeCountService, ragService);
+                treeCountService, ragService, answerClient);
     }
 
     @Test
@@ -178,6 +182,57 @@ class ChatServiceTest {
         assertThat(res.reply()).isEqualTo(ChatService.MODULE_DOWN);
         assertThat(res.intent()).isEqualTo(Intent.PRIX_VENTE);
         assertThat(res.clarify()).isFalse();
+    }
+
+    @Test
+    void llmWritesTheReplyFromTheModuleFacts() {
+        when(intentClient.detect(anyString())).thenReturn(detected(Intent.IRRIGATION, null));
+        Fact m2 = Fact.of("M2", true, "jours_irrigation_sur_7", 6);
+        when(irrigationService.answer(any())).thenReturn(new ModuleAnswer("template reply", "plan", true, List.of(m2)));
+        when(answerClient.answer(any())).thenReturn(Optional.of(
+                new AnswerClient.Answer("Esgi 6 marrat had el jem3a. (données de démo)", "gemini", "gemini-3.5-flash", 900)));
+
+        ChatResponse res = chatService.chat(USER, new ChatRequest("9adech nesgi?", null, null));
+
+        assertThat(res.reply()).isEqualTo("Esgi 6 marrat had el jem3a. (données de démo)");
+        assertThat(res.generatedBy()).isEqualTo("gemini/gemini-3.5-flash");
+        assertThat(res.data()).isEqualTo("plan");
+        ArgumentCaptor<AnswerClient.Request> sent = ArgumentCaptor.forClass(AnswerClient.Request.class);
+        verify(answerClient).answer(sent.capture());
+        assertThat(sent.getValue().question()).isEqualTo("9adech nesgi?");
+        assertThat(sent.getValue().facts()).containsExactly(m2);
+        assertThat(sent.getValue().draft()).isEqualTo("template reply");
+    }
+
+    @Test
+    void harvestQuestionIsEnrichedWithPriceFacts() {
+        when(intentClient.detect(anyString())).thenReturn(detected(Intent.RECOLTE, null));
+        Fact m3 = Fact.of("M3", true, "estimation_parcelle_kg_olives", 7500);
+        Fact m4 = Fact.of("M4", true, "conseil", "STORE");
+        when(yieldService.answer(any())).thenReturn(new ModuleAnswer("yield", null, true, List.of(m3)));
+        when(priceService.answer(any())).thenReturn(new ModuleAnswer("price", null, true, List.of(m4)));
+
+        ChatResponse res = chatService.chat(USER, new ChatRequest("9adech bech njib?", null, null));
+
+        ArgumentCaptor<AnswerClient.Request> sent = ArgumentCaptor.forClass(AnswerClient.Request.class);
+        verify(answerClient).answer(sent.capture());
+        assertThat(sent.getValue().facts()).containsExactly(m3, m4);
+        assertThat(res.reply()).isEqualTo("yield"); // no LLM in this test: template of the main module
+    }
+
+    @Test
+    void failingComplementaryModuleIsIgnored() {
+        when(intentClient.detect(anyString())).thenReturn(detected(Intent.PRIX_VENTE, null));
+        Fact m4 = Fact.of("M4", true, "conseil", "SELL_NOW");
+        when(priceService.answer(any())).thenReturn(new ModuleAnswer("price", null, true, List.of(m4)));
+        when(yieldService.answer(any())).thenThrow(new AiServiceException(HttpStatus.SERVICE_UNAVAILABLE, "M3 down"));
+
+        ChatResponse res = chatService.chat(USER, new ChatRequest("nbi3 taw?", null, null));
+
+        assertThat(res.reply()).isEqualTo("price");
+        ArgumentCaptor<AnswerClient.Request> sent = ArgumentCaptor.forClass(AnswerClient.Request.class);
+        verify(answerClient).answer(sent.capture());
+        assertThat(sent.getValue().facts()).containsExactly(m4);
     }
 
     @Test

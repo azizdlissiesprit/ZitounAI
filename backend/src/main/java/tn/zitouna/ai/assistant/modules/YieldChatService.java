@@ -1,5 +1,6 @@
 package tn.zitouna.ai.assistant.modules;
 
+import java.util.List;
 import java.util.Locale;
 
 import org.springframework.stereotype.Service;
@@ -31,6 +32,14 @@ public class YieldChatService implements YieldService {
                 ? String.format(Locale.ROOT, " Lel parcelle « %s » (%d chajra): ≈ %.0f kg zitoun (bin %.0f w %.0f).",
                         location.label(), trees, y.parcelEstimateKg(), y.parcelLowKg(), y.parcelHighKg())
                 : " Ikhtar parcelle fiha 3add el zitoun bech na7seblek saba mte3ek.";
-        return new ModuleAnswer(reply, y, y.mock());
+        Fact fact = Fact.of("M3", y.mock(),
+                "gouvernorat", y.governorate(),
+                "saison", y.season() + "/" + (y.season() + 1),
+                "production_regionale_tonnes", Math.round(y.regionalProductionTonnes()),
+                "nombre_arbres", trees,
+                "kg_olives_par_arbre", y.kgPerTree(),
+                "estimation_parcelle_kg_olives", y.parcelEstimateKg(),
+                "fourchette_parcelle_kg", y.parcelEstimateKg() == null ? null : y.parcelLowKg() + " - " + y.parcelHighKg());
+        return new ModuleAnswer(reply, y, y.mock(), List.of(fact));
     }
 }

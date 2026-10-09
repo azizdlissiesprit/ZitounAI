@@ -52,3 +52,36 @@ class IntentResponse(CamelModel):
     entities: Entities
     model_version: str
     mock: bool  # true = keyword fallback, the trained ensemble is not loaded
+
+
+# ---- POST /answer: the LLM writes the reply from the facts gathered by the backend ----
+
+
+class Fact(CamelModel):
+    source: str = Field(examples=["M2"])  # module that produced the data
+    mock: bool = False
+    data: dict
+
+
+class ParcelInfo(CamelModel):
+    name: str | None = None
+    governorate: str | None = None
+    tree_count: int | None = None
+    area_ha: float | None = None
+    variety: str | None = None
+    irrigated: bool | None = None
+
+
+class AnswerRequest(CamelModel):
+    question: str = Field(min_length=1, max_length=500)
+    intent: Intent
+    facts: list[Fact] = Field(default_factory=list, max_length=10)
+    parcel: ParcelInfo | None = None
+    draft: str | None = Field(default=None, max_length=2000)  # template answer, used as a base
+
+
+class AnswerResponse(CamelModel):
+    answer: str
+    provider: str
+    model: str
+    latency_ms: int

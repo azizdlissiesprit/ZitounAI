@@ -1,5 +1,7 @@
 package tn.zitouna.ai.assistant.modules;
 
+import java.util.Comparator;
+import java.util.List;
 import java.util.Locale;
 
 import org.springframework.stereotype.Service;
@@ -24,6 +26,13 @@ public class PriceChatService implements PriceService {
                 : "Na9tara7 tkhazzen zitek w testanna chwaya.";
         String reply = String.format(Locale.ROOT, "%s Soum el youm ≈ %.2f %s/%s. %s",
                 advice, today, price.currency(), price.unit(), price.reason());
-        return new ModuleAnswer(reply, price, price.mock());
+        var best = price.forecast().stream().max(Comparator.comparingDouble(PriceResult.Point::price)).orElse(null);
+        Fact fact = Fact.of("M4", price.mock(),
+                "prix_huile_aujourdhui_tnd_kg", today,
+                "prix_max_prevu_tnd_kg", best == null ? null : best.price(),
+                "date_prix_max", best == null ? null : best.date(),
+                "conseil", price.recommendation(),
+                "explication", price.reason());
+        return new ModuleAnswer(reply, price, price.mock(), List.of(fact));
     }
 }

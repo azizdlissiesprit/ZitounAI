@@ -1,5 +1,8 @@
 package tn.zitouna.history;
 
+import java.time.Instant;
+import java.util.Optional;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -35,6 +38,18 @@ public class HistoryService {
         record.setResponseJson(json.writeValueAsString(response));
         record.setMock(response.mock());
         predictions.save(record);
+    }
+
+    /** Latest result of a module for this user (and parcel, if given), e.g. the last leaf diagnosis. */
+    @Transactional(readOnly = true)
+    public <T> Optional<Latest<T>> latest(Long userId, Long parcelId, PredictionType type, Class<T> resultType) {
+        Optional<PredictionRecord> record = parcelId == null
+                ? predictions.findFirstByUserIdAndTypeOrderByCreatedAtDesc(userId, type)
+                : predictions.findFirstByUserIdAndParcelIdAndTypeOrderByCreatedAtDesc(userId, parcelId, type);
+        return record.map(r -> new Latest<>(json.readValue(r.getResponseJson(), resultType), r.getCreatedAt()));
+    }
+
+    public record Latest<T>(T result, Instant createdAt) {
     }
 
     @Transactional(readOnly = true)

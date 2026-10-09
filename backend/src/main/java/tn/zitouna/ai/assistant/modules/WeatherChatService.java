@@ -1,5 +1,6 @@
 package tn.zitouna.ai.assistant.modules;
 
+import java.util.List;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -29,6 +30,10 @@ public class WeatherChatService implements WeatherService {
                 : "Rod belek fi %s: %s".formatted(location.label(), result.alerts().stream()
                         .map(a -> a.date() + " — " + a.message())
                         .collect(Collectors.joining(" ")));
-        return new ModuleAnswer(reply, result.alerts(), result.mock());
+        Fact fact = Fact.of("M2", result.mock(),
+                "lieu", location.label(),
+                "alertes_7_jours", result.alerts().stream().map(a -> Fact.of("", false, "date", a.date(),
+                        "type", a.type(), "gravite", a.severity(), "message", a.message()).data()).toList());
+        return new ModuleAnswer(reply, result.alerts(), result.mock(), List.of(fact));
     }
 }

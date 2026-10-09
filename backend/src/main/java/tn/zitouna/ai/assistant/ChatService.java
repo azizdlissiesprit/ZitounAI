@@ -1,7 +1,9 @@
 package tn.zitouna.ai.assistant;
 
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.springframework.stereotype.Service;
@@ -11,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import tn.zitouna.ai.AiServiceException;
 import tn.zitouna.ai.assistant.modules.ChatContext;
 import tn.zitouna.ai.assistant.modules.DiseaseService;
+import tn.zitouna.ai.assistant.modules.Fact;
 import tn.zitouna.ai.assistant.modules.IrrigationService;
 import tn.zitouna.ai.assistant.modules.ModuleAnswer;
 import tn.zitouna.ai.assistant.modules.PriceService;
@@ -24,8 +27,11 @@ import tn.zitouna.parcel.Parcel;
 import tn.zitouna.parcel.ParcelService;
 
 /**
- * Chat orchestration: M5 detects the intent, then the question is routed to the module that
- * can answer it. A module failure never breaks the chat: the farmer gets a "try again" reply.
+ * Chat orchestration:
+ * 1. M5 detects the intent (or asks to clarify);
+ * 2. the module(s) that can answer are called, plus complementary ones (harvest -> also price...);
+ * 3. an LLM (M5 /answer) writes the reply from their facts; if no LLM answers, the template reply is used.
+ * A module failure never breaks the chat: the farmer gets a "try again" reply.
  */
 @Slf4j
 @Service
@@ -38,7 +44,14 @@ public class ChatService {
             + "Jarreb mathalan: '9adech nesgi zitouni had el jem3a?'";
     static final String MODULE_DOWN = "Sameh7ni, ma najamtech nejawbek tawa. 3awed ba3d chwaya.";
 
+    /** Complementary modules whose facts enrich the answer (their failure is ignored). */
+    static final Map<Intent, List<Intent>> ENRICH = Map.of(
+            Intent.METEO_ALERTE, List.of(Intent.IRRIGATION),
+            Intent.RECOLTE, List.of(Intent.PRIX_VENTE),
+            Intent.PRIX_VENTE, List.of(Intent.RECOLTE));
+
     private final IntentClient intentClient;
+    private final AnswerClient answerClient;
     private final ParcelService parcelService;
     private final HistoryService historyService;
     private final DiseaseService diseaseService;
@@ -56,7 +69,8 @@ public class ChatService {
                 : intentClient.detect(request.text());
 
         ChatResponse response = nlu.clarify()
-                ? new ChatResponse(nlu.question(), nlu.intent(), true, suggestions(nlu), null, nlu.mock())
+                ? new ChatResponse(nlu.question(), nlu.intent(), true, suggestions(nlu), null, nlu.mock(),
+                        ChatResponse.TEMPLATE)
                 : route(nlu, new ChatContext(userId, request.text(), parcel, governorate(nlu)));
 
         historyService.record(userId, request.parcelId(), PredictionType.CHAT, request, response);
@@ -65,27 +79,60 @@ public class ChatService {
 
     private ChatResponse route(IntentResponse nlu, ChatContext ctx) {
         Intent intent = nlu.intent();
+        if (intent == Intent.SALUTATION || intent == Intent.HORS_SUJET) {
+            // Fixed, instant answers: no module, no LLM.
+            return answer(intent, intent == Intent.SALUTATION ? GREETING : OFF_TOPIC, null, false, ChatResponse.TEMPLATE);
+        }
+        ModuleAnswer module;
         try {
-            ModuleAnswer module = switch (intent) {
-                case MALADIE -> diseaseService.answer(ctx);
-                case IRRIGATION -> irrigationService.answer(ctx);
-                case METEO_ALERTE -> weatherService.answer(ctx);
-                case RECOLTE -> yieldService.answer(ctx);
-                case PRIX_VENTE -> priceService.answer(ctx);
-                case COMPTAGE -> treeCountService.answer(ctx);
-                case CONSEIL_GENERAL -> ragService.answer(ctx);
-                case SALUTATION -> new ModuleAnswer(GREETING, null, false);
-                case HORS_SUJET -> new ModuleAnswer(OFF_TOPIC, null, false);
-            };
-            return answer(intent, module.reply(), module.data(), nlu.mock() || module.mock());
+            module = call(intent, ctx);
         } catch (AiServiceException e) {
             log.warn("Module for intent {} failed: {}", intent, e.getMessage());
-            return answer(intent, MODULE_DOWN, null, nlu.mock());
+            return answer(intent, MODULE_DOWN, null, nlu.mock(), ChatResponse.TEMPLATE);
         }
+
+        List<Fact> facts = new ArrayList<>(module.facts());
+        boolean mock = nlu.mock() || module.mock();
+        for (Intent extra : ENRICH.getOrDefault(intent, List.of())) {
+            try {
+                ModuleAnswer more = call(extra, ctx);
+                if (more != null && !more.facts().isEmpty()) {
+                    facts.addAll(more.facts());
+                    mock |= more.mock();
+                }
+            } catch (AiServiceException e) {
+                log.info("Complementary module {} skipped: {}", extra, e.getMessage());
+            }
+        }
+
+        var llm = answerClient.answer(new AnswerClient.Request(ctx.text(), intent, facts, parcelInfo(ctx), module.reply()));
+        return llm.isPresent()
+                ? answer(intent, llm.get().answer(), module.data(), mock, llm.get().generatedBy())
+                : answer(intent, module.reply(), module.data(), mock, ChatResponse.TEMPLATE);
     }
 
-    private static ChatResponse answer(Intent intent, String reply, Object data, boolean mock) {
-        return new ChatResponse(reply, intent, false, List.of(), data, mock);
+    private ModuleAnswer call(Intent intent, ChatContext ctx) {
+        return switch (intent) {
+            case MALADIE -> diseaseService.answer(ctx);
+            case IRRIGATION -> irrigationService.answer(ctx);
+            case METEO_ALERTE -> weatherService.answer(ctx);
+            case RECOLTE -> yieldService.answer(ctx);
+            case PRIX_VENTE -> priceService.answer(ctx);
+            case COMPTAGE -> treeCountService.answer(ctx);
+            case CONSEIL_GENERAL -> ragService.answer(ctx);
+            case SALUTATION, HORS_SUJET -> throw new IllegalArgumentException("no module for " + intent);
+        };
+    }
+
+    private static ChatResponse answer(Intent intent, String reply, Object data, boolean mock, String generatedBy) {
+        return new ChatResponse(reply, intent, false, List.of(), data, mock, generatedBy);
+    }
+
+    private static AnswerClient.Parcel parcelInfo(ChatContext ctx) {
+        Parcel p = ctx.parcel();
+        return p == null ? null
+                : new AnswerClient.Parcel(p.getName(), p.getGovernorate(), p.getTreeCount(), p.getAreaHa(),
+                        p.getVariety(), p.isIrrigated());
     }
 
     /**

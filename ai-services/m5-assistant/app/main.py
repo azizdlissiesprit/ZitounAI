@@ -1,4 +1,7 @@
-"""M5 · Derja assistant: intent detection. Thin FastAPI wrapper: no business logic, no database.
+"""M5 · Derja assistant. Thin FastAPI wrapper: no business logic, no database.
+
+- POST /intent: which module should answer (trained TF-IDF + SetFit ensemble)
+- POST /answer: an LLM writes the reply in derja from the facts gathered by the backend
 
 Routing the question to M1-M4 / M6 is done by the Spring backend (ChatService), not here.
 """
@@ -7,12 +10,15 @@ import logging
 import time
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 
 from app import predictor
-from app.schemas import IntentRequest, IntentResponse
+from app.llm import AllProvidersFailed, LlmRouter, build_chain
+from app.prompt import build_messages
+from app.schemas import AnswerRequest, AnswerResponse, IntentRequest, IntentResponse
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
+logging.getLogger("httpx").setLevel(logging.WARNING)
 log = logging.getLogger("m5")
 
 
@@ -23,15 +29,23 @@ async def lifespan(app: FastAPI):
     app.state.ensemble = predictor.load()
     predictor.predict(app.state.ensemble, "aslema")
     log.info("models ready in %.1f s (loaded=%s)", time.perf_counter() - started, app.state.ensemble is not None)
+    app.state.llm = LlmRouter(build_chain())
+    log.info("LLM chain: %s", [m.name for m in app.state.llm.models] or "none (no API key): template answers only")
     yield
+    app.state.llm.client.close()
 
 
-app = FastAPI(title="Zitouna M5 · Derja assistant (intents)", version="2.0", lifespan=lifespan)
+app = FastAPI(title="Zitouna M5 · Derja assistant", version="2.1", lifespan=lifespan)
 
 
 @app.get("/health")
 def health(request: Request) -> dict:
-    return {"status": "ok", "module": "m5-assistant", "modelLoaded": request.app.state.ensemble is not None}
+    return {
+        "status": "ok",
+        "module": "m5-assistant",
+        "modelLoaded": request.app.state.ensemble is not None,
+        "llmModels": [m.name for m in request.app.state.llm.models],
+    }
 
 
 @app.post("/intent", response_model=IntentResponse)
@@ -47,3 +61,18 @@ def intent(body: IntentRequest, request: Request) -> IntentResponse:
         (time.perf_counter() - started) * 1000,
     )
     return result
+
+
+@app.post("/answer", response_model=AnswerResponse, responses={503: {"description": "No LLM available"}})
+def answer(body: AnswerRequest, request: Request) -> AnswerResponse:
+    """503 when no LLM is configured or all are failing: the backend then uses its template answer."""
+    router: LlmRouter = request.app.state.llm
+    if not router.enabled:
+        raise HTTPException(status_code=503, detail="No LLM configured (set GEMINI_API_KEY...)")
+    try:
+        done = router.complete(build_messages(body))
+    except AllProvidersFailed as e:
+        raise HTTPException(status_code=503, detail=f"All LLMs failed: {e}") from e
+    log.info("answer intent=%s facts=%d llm=%s/%s latency_ms=%d", body.intent, len(body.facts), done.provider,
+             done.model, done.latency_ms)  # fmt: skip
+    return AnswerResponse(answer=done.text, provider=done.provider, model=done.model, latency_ms=done.latency_ms)

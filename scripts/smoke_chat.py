@@ -83,12 +83,17 @@ def main() -> int:
             problems.append(f"intent {res['intent']} != {intent}")
         if res["clarify"] != clarify:
             problems.append(f"clarify {res['clarify']} != {clarify}")
-        if expected_text and expected_text.lower() not in res["reply"].lower():
+        llm = res.get("generatedBy", "template") != "template"
+        # LLM replies are free text: the expected words are only checked on template replies.
+        if expected_text and not llm and expected_text.lower() not in res["reply"].lower():
             problems.append(f"reply does not contain {expected_text!r}")
+        if not res["reply"].strip():
+            problems.append("empty reply")
         failures += bool(problems)
         flags = ("clarify " + ",".join(res["suggestions"]) if res["clarify"] else "") + (" [mock]" if res["mock"] else "")
-        print(f"{'FAIL' if problems else 'ok  '}  {ms:5.0f} ms  {res['intent']:<15} {text}")
-        print(f"      -> {res['reply'][:110]}{' ' + flags if flags else ''}")
+        by = res.get("generatedBy", "template").split("/")[-1]
+        print(f"{'FAIL' if problems else 'ok  '}  {ms:5.0f} ms  {res['intent']:<15} [{by}] {text}")
+        print(f"      -> {res['reply'][:300]}{' ' + flags if flags else ''}")
         for p in problems:
             print(f"      !! {p}")
 

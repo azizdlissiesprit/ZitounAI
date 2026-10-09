@@ -1,5 +1,6 @@
 package tn.zitouna.ai.assistant.modules;
 
+import java.util.List;
 import java.util.Locale;
 
 import org.springframework.stereotype.Service;
@@ -36,6 +37,15 @@ public class IrrigationChatService implements IrrigationService {
                 : String.format(Locale.ROOT, "Fi %s, el 7 ayyem ejjeyin: lazmek tesgi %d marrat, el 7aja el kol ≈ %.0f mm%s.",
                         location.label(), days, totalMm,
                         liters == null ? "" : String.format(Locale.ROOT, " (≈ %.0f litre lel chajra fil marra)", liters));
-        return new ModuleAnswer(reply, plan, plan.mock());
+        Fact fact = Fact.of("M2", plan.mock(),
+                "lieu", location.label(),
+                "jours_irrigation_sur_7", days,
+                "besoin_total_mm", Math.round(totalMm * 10) / 10.0,
+                "litres_par_arbre_par_irrigation", liters,
+                "jours", plan.days().stream().map(d -> Fact.of("", false, "date", d.date(), "besoin_mm",
+                        d.waterNeedMm(), "pluie_mm", d.rainMm(), "irriguer", d.irrigate()).data()).toList(),
+                "alertes", plan.alerts().stream().map(a -> Fact.of("", false, "date", a.date(), "type", a.type(),
+                        "message", a.message()).data()).toList());
+        return new ModuleAnswer(reply, plan, plan.mock(), List.of(fact));
     }
 }

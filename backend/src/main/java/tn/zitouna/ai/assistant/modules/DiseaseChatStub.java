@@ -1,15 +1,47 @@
 package tn.zitouna.ai.assistant.modules;
 
+import java.time.ZoneId;
+import java.util.List;
+import java.util.Locale;
+
 import org.springframework.stereotype.Service;
 
-/** maladie -> M1. STUB: M1 needs a leaf photo, which the chat cannot send yet. */
+import lombok.RequiredArgsConstructor;
+import tn.zitouna.ai.disease.DiseaseResult;
+import tn.zitouna.history.HistoryService;
+import tn.zitouna.history.PredictionType;
+
+/**
+ * maladie -> M1. M1 needs a leaf photo, which the chat cannot send yet: the chat uses the latest
+ * diagnosis made on the "Diagnostic" page (from the history), if there is one.
+ */
 @Service
+@RequiredArgsConstructor
 public class DiseaseChatStub implements DiseaseService {
+
+    private static final String ASK_PHOTO =
+            "Bech na3ref el mardh, ab3athli taswira wadh7a mta3 war9a mel page « Diagnostic ».";
+
+    private final HistoryService historyService;
 
     @Override
     public ModuleAnswer answer(ChatContext ctx) {
-        // TODO(M1): when the chat accepts images, call DiseaseClient.predict(image) and answer with
-        //  the disease (labelFr) and the treatment advice.
-        return ModuleAnswer.stub("Bech na3ref el mardh, ab3athli taswira wadh7a mta3 war9a mel page « Diagnostic ».");
+        // TODO(M1): when the chat accepts images, call DiseaseClient.predict(image) directly.
+        Long parcelId = ctx.parcel() == null ? null : ctx.parcel().getId();
+        var latest = historyService.latest(ctx.userId(), parcelId, PredictionType.DISEASE, DiseaseResult.class);
+        if (latest.isEmpty()) {
+            return ModuleAnswer.stub(ASK_PHOTO);
+        }
+        DiseaseResult d = latest.get().result();
+        var date = latest.get().createdAt().atZone(ZoneId.of("Africa/Tunis")).toLocalDate();
+        String reply = String.format(Locale.ROOT, "Akher tachkhis (%s): %s (%.0f%%). %s %s",
+                date, d.labelFr(), d.confidence() * 100, d.advice(), ASK_PHOTO);
+        Fact fact = Fact.of("M1 (dernier diagnostic photo)", d.mock(),
+                "date", date,
+                "resultat", d.labelFr(),
+                "confiance", Math.round(d.confidence() * 100) + " %",
+                "conseil_de_traitement", d.advice(),
+                "pour_un_nouveau_diagnostic", "envoyer une photo de feuille dans la page Diagnostic");
+        return new ModuleAnswer(reply, d, d.mock(), List.of(fact));
     }
 }

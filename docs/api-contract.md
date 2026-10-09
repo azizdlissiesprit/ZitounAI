@@ -32,7 +32,7 @@ Base URL `/api`. All endpoints except `/api/auth/**` need `Authorization: Bearer
 | GET | `/parcels/{id}/irrigation` | | `IrrigationResult` | M2 |
 | GET | `/parcels/{id}/yield` | optional `?season=2026` | `YieldResult` | M3 |
 | GET | `/ai/price` | `?horizonWeeks=8&quantityKg=` | `PriceResult` | M4 |
-| POST | `/ai/chat` | `{text, parcelId?, forcedIntent?}` | `{reply, intent, clarify, suggestions, data, mock}` | M5 → M1…M6 / RAG |
+| POST | `/ai/chat` | `{text, parcelId?, forcedIntent?}` | `{reply, intent, clarify, suggestions, data, mock, generatedBy}` | M5 → M1…M6 / RAG → LLM |
 | POST | `/parcels/{id}/count-trees` | multipart `image` | `TreeCountResult` (also saves `treeCount` on the parcel when not mock) | M6 |
 | POST | `/parcels/{id}/harvest-plan` | optional multipart `image` | `HarvestPlan` | M6 → M3 → M4 |
 | GET | `/history` | `?type=DISEASE&page=0&size=20` | `{content: Prediction[], page, size, totalElements, totalPages}` | — |
@@ -175,12 +175,31 @@ Backend `POST /api/ai/chat` response:
 
 ```json
 {
-  "reply": "Rod belek fi beja: 2026-10-09 — Risque de gel (-1 °C) : protégez les jeunes plants.",
-  "intent": "meteo_alerte", "clarify": false, "suggestions": [], "data": [ { "…": "Alert" } ], "mock": true
+  "reply": "Ma fama 7atta tanbih mta3 jlid fi Beja el 7 ayyam ejjayin, w fama chwaya chatri nhar 12 octobre. (données de démo)",
+  "intent": "meteo_alerte", "clarify": false, "suggestions": [], "data": [ { "…": "Alert" } ], "mock": true,
+  "generatedBy": "gemini/gemini-2.5-flash"
 }
 ```
 
-With `clarify: true`, `reply` is the question and `suggestions` the intents to show as buttons; clicking one resends the same `text` with `forcedIntent`.
+With `clarify: true`, `reply` is the question and `suggestions` the intents to show as buttons; clicking one resends the same `text` with `forcedIntent`. `generatedBy` is `"template"` when no LLM wrote the reply.
+
+`POST /answer` — the LLM writes the reply from the facts gathered by the backend (rotation across free APIs, see `app/llm.py`). `503` when no LLM is configured or all fail: the backend then uses its template reply.
+
+```json
+{
+  "question": "9adech bech njib zit had el 3am?", "intent": "recolte",
+  "facts": [ { "source": "M3", "mock": true, "data": { "estimation_parcelle_kg_olives": 7500 } },
+             { "source": "M4", "mock": true, "data": { "prix_huile_aujourdhui_tnd_kg": 12.72, "conseil": "STORE" } } ],
+  "parcel": { "name": "Henchir Sfax", "governorate": "Sfax", "treeCount": 250, "areaHa": 2.5 },
+  "draft": "Saba mta3 Sfax (mawsem 2026/2027) ≈ 504000 tonne zitoun. …"
+}
+```
+
+```json
+{ "answer": "Lel parcelle mte3ek n9addrou 7500 kg zitoun… (données de démo)", "provider": "gemini", "model": "gemini-3.5-flash", "latencyMs": 1420 }
+```
+
+Facts per intent (backend `ChatService.ENRICH`): `meteo_alerte` = M2 alerts + irrigation plan, `recolte` = M3 + M4, `prix_vente` = M4 + M3, `maladie` = latest M1 diagnosis from the history. Only facts and the parcel profile are sent to the LLM, never personal data.
 
 ### M6
 

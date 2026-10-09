@@ -94,6 +94,12 @@ services:
     environment:
       MODEL_DIR: /models/m5_ensemble # TF-IDF + SetFit ensemble (~1 GB, loaded once at startup)
       PORT: 8000
+      # LLM writing the chat replies, rotation in this order (see app/llm.py). No key -> template replies.
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      XAI_API_KEY: ${XAI_API_KEY:-}
+      LLM_CHAIN: ${LLM_CHAIN:-}
     ports:
       - "8005:8000"
 

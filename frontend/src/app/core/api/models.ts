@@ -116,6 +116,8 @@ export interface ChatResponse extends AiResult {
   suggestions: Intent[];
   /** Raw result of the module that answered (IrrigationResult, PriceResult...), or null. */
   data: unknown;
+  /** "gemini/gemini-3.5-flash" when an LLM wrote the reply, "template" otherwise. */
+  generatedBy: string;
 }
 
 // M6

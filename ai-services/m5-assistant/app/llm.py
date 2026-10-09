@@ -26,10 +26,11 @@ PROVIDERS = {
 
 # Tried in this order. "extra" = provider/model specific parameters.
 # gemini-3.5-flash "thinks" by default, which eats the token budget: reasoning_effort=none turns it off.
-# The lite models do not think and reject that parameter.
+# The lite models do not think and reject that parameter. Same for qwen on Groq (~0.4 s per answer);
+# groq/openai/gpt-oss-120b was tried and left out: it invented figures and mixed scripts.
 DEFAULT_CHAIN = [
     {"provider": "gemini", "model": "gemini-3.5-flash", "extra": {"reasoning_effort": "none"}},
-    {"provider": "groq", "model": "llama-3.3-70b-versatile"},
+    {"provider": "groq", "model": "qwen/qwen3.8-27b", "extra": {"reasoning_effort": "none"}},
     {"provider": "gemini", "model": "gemini-2.5-flash", "extra": {"reasoning_effort": "none"}},
     {"provider": "gemini", "model": "gemini-3.5-flash-lite"},
     {"provider": "gemini", "model": "gemini-flash-lite-latest"},

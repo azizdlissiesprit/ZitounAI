@@ -80,7 +80,7 @@ Never `git push --force` on `develop` or `main`. Never rewrite a branch someone 
 | ❌ | ✅ instead |
 |---|---|
 | Datasets (`data/raw`, `data/processed`) | Shared Google Drive folder, same structure (see [data/README.md](data/README.md)) |
-| Model weights (`.pt`, `.pkl`, `.joblib`, `.onnx`…) | Drive `models/mX/`, copied into `models/` locally (see [models/README.md](models/README.md)) |
+| Model weights (`.pt`, `.pkl`, `.joblib`, `.onnx`…) | Hugging Face model repo: `python scripts/models.py pull` / `push` (see [models/README.md](models/README.md)) |
 | `.env`, passwords, API keys, the JWT secret | `.env` (git-ignored); document new variables in `.env.example` |
 | Notebook outputs (images, big tables) | Strip outputs before committing (`nbstripout`, below) |
 | `node_modules/`, `target/`, `.venv/` | Rebuilt by each member |
@@ -107,7 +107,7 @@ The JSON exchanged between the app, the backend and the AI services is described
 ## 7. Module owners: from notebook to service
 
 1. Explore and train in `notebooks/mX_*/`. Log runs in MLflow (params, metric, baseline vs model).
-2. Export the model to `models/mX/` and upload it to the Drive.
+2. Export the model to `models/mX/` and upload it: `python scripts/models.py push mX`.
 3. Plug it in `ai-services/mX-*/app/predictor.py` (`load()` and `predict()`) and add the libraries to `requirements.txt`.
 4. Restart the service: `/health` shows `"modelLoaded": true` and responses have `"mock": false`.
 

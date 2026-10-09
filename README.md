@@ -2,8 +2,7 @@
 
 Assistant intelligent pour les petits oléiculteurs tunisiens : diagnostiquer les maladies des feuilles, irriguer au bon moment, estimer la récolte, choisir quand vendre, poser ses questions en derja.
 
-<!-- Replace OWNER/REPO after the first push -->
-![CI](https://github.com/OWNER/REPO/actions/workflows/ci.yml/badge.svg?branch=develop)
+![CI](https://github.com/azizdlissiesprit/ZitounAI/actions/workflows/ci.yml/badge.svg?branch=develop)
 
 ## Architecture
 
@@ -61,7 +60,7 @@ Each member owns their module end to end: data → notebook → model → FastAP
 Prerequisites: Docker Desktop, Git.
 
 ```bash
-git clone https://github.com/OWNER/REPO.git zitouna-ai
+git clone https://github.com/azizdlissiesprit/ZitounAI.git zitouna-ai
 cd zitouna-ai
 cp .env.example .env          # then put a long random JWT_SECRET in .env
 docker compose up --build

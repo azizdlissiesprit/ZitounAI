@@ -121,7 +121,7 @@ The JSON exchanged between the app, the backend and the AI services is described
   - Require conversation resolution
   - Block force pushes and deletions
 - **Settings → Collaborators**: add the 5 teammates with *Write* access.
-- Replace `@member1…@member6` in [.github/CODEOWNERS](.github/CODEOWNERS) with real usernames.
+- [.github/CODEOWNERS](.github/CODEOWNERS): give each module to its owner (replace the username on its lines).
 - Create labels: `type:task`, `type:bug`, `m1` … `m6`, `backend`, `frontend`, `infra`, `report`.
 - Create a **Project** (board) and link it to the repo.
 

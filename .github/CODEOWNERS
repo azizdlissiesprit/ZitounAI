@@ -1,31 +1,31 @@
 # Owners are automatically requested as reviewers on PRs touching their files.
-# TODO: replace @member1 ... @member6 with the real GitHub usernames
-# (an unknown username makes GitHub ignore that line).
+# For now @azizdlissiesprit owns everything: to give a module to a teammate, replace the username
+# on its lines (an unknown username makes GitHub ignore that line).
 # The last matching line wins.
 
-*                               @member3
+*                               @azizdlissiesprit
 
 # AI modules: service + notebook belong to the module owner
-/ai-services/m1-disease/        @member1
-/notebooks/m1_disease/          @member1
-/ai-services/m2-irrigation/     @member2
-/notebooks/m2_irrigation/       @member2
-/ai-services/m3-yield/          @member3
-/notebooks/m3_yield/            @member3
-/ai-services/m4-price/          @member4
-/notebooks/m4_price/            @member4
-/ai-services/m5-assistant/      @member5
-/notebooks/m5_assistant/        @member5
-/ai-services/m6-tree-count/     @member6
-/notebooks/m6_tree_count/       @member6
+/ai-services/m1-disease/        @azizdlissiesprit
+/notebooks/m1_disease/          @azizdlissiesprit
+/ai-services/m2-irrigation/     @azizdlissiesprit
+/notebooks/m2_irrigation/       @azizdlissiesprit
+/ai-services/m3-yield/          @azizdlissiesprit
+/notebooks/m3_yield/            @azizdlissiesprit
+/ai-services/m4-price/          @azizdlissiesprit
+/notebooks/m4_price/            @azizdlissiesprit
+/ai-services/m5-assistant/      @azizdlissiesprit
+/notebooks/m5_assistant/        @azizdlissiesprit
+/ai-services/m6-tree-count/     @azizdlissiesprit
+/notebooks/m6_tree_count/       @azizdlissiesprit
 
 # Cross-cutting roles
-/backend/                       @member2
-/frontend/                      @member4
-/docs/                          @member5
-/docker-compose.yml             @member6
-**/Dockerfile                   @member6
-/.github/                       @member3
+/backend/                       @azizdlissiesprit
+/frontend/                      @azizdlissiesprit
+/docs/                          @azizdlissiesprit
+/docker-compose.yml             @azizdlissiesprit
+**/Dockerfile                   @azizdlissiesprit
+/.github/                       @azizdlissiesprit
 
 # Changing the contract affects everyone: backend + frontend owners must approve
-/docs/api-contract.md           @member2 @member4
+/docs/api-contract.md           @azizdlissiesprit

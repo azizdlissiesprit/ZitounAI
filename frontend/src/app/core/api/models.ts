@@ -90,11 +90,34 @@ export interface PriceResult extends AiResult {
 }
 
 // M5 (through the backend's ChatService)
+export type Intent =
+  | 'maladie'
+  | 'irrigation'
+  | 'meteo_alerte'
+  | 'recolte'
+  | 'prix_vente'
+  | 'comptage'
+  | 'conseil_general'
+  | 'salutation'
+  | 'hors_sujet';
+
+export interface ChatRequest {
+  text: string;
+  parcelId?: number | null;
+  /** Set when the farmer clicks a suggestion: the backend skips the classification. */
+  forcedIntent?: Intent | null;
+}
+
 export interface ChatResponse extends AiResult {
-  intent: string;
-  answer: string;
-  answeredBy: string;
-  sources: { title: string; url: string | null }[];
+  reply: string;
+  intent: Intent;
+  /** true: `reply` is a question and `suggestions` should be shown as buttons. */
+  clarify: boolean;
+  suggestions: Intent[];
+  /** Raw result of the module that answered (IrrigationResult, PriceResult...), or null. */
+  data: unknown;
+  /** "gemini/gemini-3.5-flash" when an LLM wrote the reply, "template" otherwise. */
+  generatedBy: string;
 }
 
 // M6

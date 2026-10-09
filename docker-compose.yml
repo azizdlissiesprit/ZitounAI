@@ -2,6 +2,7 @@
 # Only what you need (e.g. DB + your AI service, backend from IntelliJ):
 #                   docker compose up postgres m1-disease
 # App: http://localhost:4200 · API: http://localhost:8080/swagger-ui.html
+# Port already taken on your machine? Change DB_PORT / BACKEND_PORT / FRONTEND_PORT in .env
 
 x-ai-service: &ai-service
   restart: unless-stopped
@@ -17,7 +18,7 @@ services:
       POSTGRES_USER: ${DB_USER:-zitouna}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-zitouna}
     ports:
-      - "5432:5432"
+      - "${DB_PORT:-5432}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -45,7 +46,7 @@ services:
       AI_M5_URL: http://m5-assistant:8000
       AI_M6_URL: http://m6-tree-count:8000
     ports:
-      - "8080:8080"
+      - "${BACKEND_PORT:-8080}:8080"
 
   frontend:
     build: ./frontend
@@ -53,7 +54,7 @@ services:
     depends_on:
       - backend
     ports:
-      - "4200:80"
+      - "${FRONTEND_PORT:-4200}:80"
 
   m1-disease:
     <<: *ai-service
@@ -91,7 +92,14 @@ services:
     <<: *ai-service
     build: ./ai-services/m5-assistant
     environment:
-      MODEL_DIR: /models/m5
+      MODEL_DIR: /models/m5_ensemble # TF-IDF + SetFit ensemble (~1 GB, loaded once at startup)
+      PORT: 8000
+      # LLM writing the chat replies, rotation in this order (see app/llm.py). No key -> template replies.
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      XAI_API_KEY: ${XAI_API_KEY:-}
+      LLM_CHAIN: ${LLM_CHAIN:-}
     ports:
       - "8005:8000"
 

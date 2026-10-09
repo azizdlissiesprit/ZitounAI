@@ -18,6 +18,7 @@ public class ChatController {
 
     private final ChatService chatService;
 
+    /** Body: {text, parcelId?, forcedIntent?}. Never fails because of M5: worst case it asks to clarify. */
     @PostMapping("/chat")
     public ChatResponse chat(@AuthenticationPrincipal Jwt jwt, @Valid @RequestBody ChatRequest request) {
         return chatService.chat(CurrentUser.id(jwt), request);

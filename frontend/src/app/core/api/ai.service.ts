@@ -2,6 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 
 import {
+  ChatRequest,
   ChatResponse,
   DiseaseResult,
   HarvestPlan,
@@ -41,9 +42,9 @@ export class AiService {
     return this.http.get<PriceResult>('/api/ai/price', { params: { horizonWeeks } });
   }
 
-  /** M5 (routed to M2/M3/M4 by the backend when needed) */
-  chat(message: string, parcelId?: number) {
-    return this.http.post<ChatResponse>('/api/ai/chat', { message, parcelId: parcelId ?? null });
+  /** M5 detects the intent, the backend routes the question to the right module. */
+  chat(request: ChatRequest) {
+    return this.http.post<ChatResponse>('/api/ai/chat', request);
   }
 
   /** M6 */

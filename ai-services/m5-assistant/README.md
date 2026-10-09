@@ -23,7 +23,7 @@ p = 0.4 · p_setfit + 0.6 · p_tfidf                     (weight_setfit in confi
 | File | What |
 |---|---|
 | `app/preprocessing.py` | `normalize` / `light_clean`: **identical to training, do not change** |
-| `app/rules.py` | domain words, confusable pairs, clarification questions: edit freely |
+| `app/rules.py` | domain words, confusable pairs, clarification questions (Arabic script): edit freely |
 | `app/entities.py` | the 24 governorates (Latin, arabizi, Arabic): add spellings freely |
 | `app/predictor.py` | loads the ensemble, combines the models; keyword fallback if no model |
 | `app/main.py` | FastAPI: models loaded once at startup (lifespan), logs with duration |
@@ -35,7 +35,7 @@ Clarification rules, first match wins:
 
 ## LLM answers (`POST /answer`)
 
-The backend sends the question plus the **facts** computed by the other modules (M2 irrigation, M3 harvest, M4 price, last M1 diagnosis…). An LLM turns them into a short answer in derja, in the farmer's script. It may not invent figures (see the rules in `app/prompt.py`).
+The backend sends the question plus the **facts** computed by the other modules (M2 irrigation, M3 harvest, M4 price, last M1 diagnosis…). An LLM turns them into a short answer in Tunisian derja, **always in Arabic script** (the question may be in arabizi, Arabic or French). It may not invent figures (see the rules in `app/prompt.py`). An answer that is not mostly Arabic script (`is_arabic_script`, ≥ 60 % Arabic letters) is rejected and the next model is tried.
 
 | File | What |
 |---|---|

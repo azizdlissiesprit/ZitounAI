@@ -10,6 +10,7 @@ import json
 import logging
 import os
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 
 import httpx
@@ -92,7 +93,9 @@ class LlmRouter:
     def enabled(self) -> bool:
         return bool(self.models)
 
-    def complete(self, messages: list[dict], temperature: float = 0.3) -> Completion:
+    def complete(self, messages: list[dict], temperature: float = 0.3,
+                 accept: Callable[[str], bool] | None = None) -> Completion:  # fmt: skip
+        """accept: optional check of the answer text; a rejected answer moves on to the next model."""
         started = time.monotonic()
         errors = []
         for m in self.models:
@@ -106,6 +109,8 @@ class LlmRouter:
                 break
             try:
                 text, ms = self._call(m, messages, temperature, min(self.timeout_s, remaining))
+                if accept and not accept(text):
+                    raise _Failure("rejected", f"answer rejected by the check: {text[:80]!r}")
                 log.info("llm=%s latency_ms=%d", m.name, ms)
                 return Completion(text, m.provider, m.model, ms)
             except _Failure as f:

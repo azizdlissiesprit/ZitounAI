@@ -20,7 +20,9 @@ import tn.zitouna.history.PredictionType;
 public class DiseaseChatStub implements DiseaseService {
 
     private static final String ASK_PHOTO =
-            "Bech na3ref el mardh, ab3athli taswira wadh7a mta3 war9a mel page « Diagnostic ».";
+            "باش نعرف المرض، ابعثلي تصويرة واضحة لورقة من صفحة « Diagnostic ».";
+
+    private static final String CHECK_WITH_TECHNICIAN = "استشير تقني فلاحي قبل ما تداوي.";
 
     private final HistoryService historyService;
 
@@ -34,8 +36,8 @@ public class DiseaseChatStub implements DiseaseService {
         }
         DiseaseResult d = latest.get().result();
         var date = latest.get().createdAt().atZone(ZoneId.of("Africa/Tunis")).toLocalDate();
-        String reply = String.format(Locale.ROOT, "Akher tachkhis (%s): %s (%.0f%%). %s %s",
-                date, d.labelFr(), d.confidence() * 100, d.advice(), ASK_PHOTO);
+        String reply = String.format(Locale.ROOT, "آخر تشخيص (%s): %s (%.0f%%). %s %s",
+                date, diseaseName(d.label(), d.labelFr()), d.confidence() * 100, CHECK_WITH_TECHNICIAN, ASK_PHOTO);
         Fact fact = Fact.of("M1 (dernier diagnostic photo)", d.mock(),
                 "date", date,
                 "resultat", d.labelFr(),
@@ -43,5 +45,16 @@ public class DiseaseChatStub implements DiseaseService {
                 "conseil_de_traitement", d.advice(),
                 "pour_un_nouveau_diagnostic", "envoyer une photo de feuille dans la page Diagnostic");
         return new ModuleAnswer(reply, d, d.mock(), List.of(fact));
+    }
+
+    /** M1 labels in Arabic for the template (the French label and advice go to the LLM as facts). */
+    static String diseaseName(String label, String labelFr) {
+        return switch (label) {
+            case "healthy" -> "الورقة صحيحة";
+            case "peacock_spot" -> "عين الطاووس";
+            case "aculus_olearius" -> "أكاروس الزيتون";
+            case "olive_knot" -> "سل الزيتون";
+            default -> labelFr;
+        };
     }
 }

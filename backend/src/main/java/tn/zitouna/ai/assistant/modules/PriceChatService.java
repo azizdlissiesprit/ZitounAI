@@ -22,10 +22,11 @@ public class PriceChatService implements PriceService {
         PriceResult price = priceClient.predict(new PriceClient.Request(8, null));
         double today = price.history().isEmpty() ? 0 : price.history().getLast().price();
         String advice = PriceResult.SELL_NOW.equals(price.recommendation())
-                ? "Na9tara7 tbi3 taw."
-                : "Na9tara7 tkhazzen zitek w testanna chwaya.";
-        String reply = String.format(Locale.ROOT, "%s Soum el youm ≈ %.2f %s/%s. %s",
-                advice, today, price.currency(), price.unit(), price.reason());
+                ? "ننصحك تبيع توا."
+                : "ننصحك تخزن زيتك وتستنى شوية.";
+        // price.reason() is in French: it goes to the LLM as a fact, not in the template.
+        String reply = String.format(Locale.ROOT, "سوم الزيت اليوم ≈ %.2f %s. %s",
+                today, perUnit(price.currency(), price.unit()), advice);
         var best = price.forecast().stream().max(Comparator.comparingDouble(PriceResult.Point::price)).orElse(null);
         Fact fact = Fact.of("M4", price.mock(),
                 "prix_huile_aujourdhui_tnd_kg", today,
@@ -34,5 +35,11 @@ public class PriceChatService implements PriceService {
                 "conseil", price.recommendation(),
                 "explication", price.reason());
         return new ModuleAnswer(reply, price, price.mock(), List.of(fact));
+    }
+
+    /** "TND", "kg" -> "دينار للكيلو"; other units are kept as M4 sends them. */
+    static String perUnit(String currency, String unit) {
+        String c = "TND".equalsIgnoreCase(currency) ? "دينار" : currency;
+        return "kg".equalsIgnoreCase(unit) ? c + " للكيلو" : c + "/" + unit;
     }
 }

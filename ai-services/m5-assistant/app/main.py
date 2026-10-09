@@ -14,7 +14,7 @@ from fastapi import FastAPI, HTTPException, Request
 
 from app import predictor
 from app.llm import AllProvidersFailed, LlmRouter, build_chain
-from app.prompt import build_messages
+from app.prompt import build_messages, is_arabic_script
 from app.schemas import AnswerRequest, AnswerResponse, IntentRequest, IntentResponse
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
@@ -70,7 +70,7 @@ def answer(body: AnswerRequest, request: Request) -> AnswerResponse:
     if not router.enabled:
         raise HTTPException(status_code=503, detail="No LLM configured (set GEMINI_API_KEY...)")
     try:
-        done = router.complete(build_messages(body))
+        done = router.complete(build_messages(body), accept=is_arabic_script)
     except AllProvidersFailed as e:
         raise HTTPException(status_code=503, detail=f"All LLMs failed: {e}") from e
     log.info("answer intent=%s facts=%d llm=%s/%s latency_ms=%d", body.intent, len(body.facts), done.provider,

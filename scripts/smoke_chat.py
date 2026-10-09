@@ -9,6 +9,7 @@ Standard library only. Sends UTF-8 bodies, so Arabic works on Windows too (unlik
 """
 
 import json
+import re
 import sys
 import time
 import urllib.error
@@ -19,21 +20,27 @@ EMAIL, PASSWORD = "smoke@zitouna.tn", "zitouna-smoke-123"
 
 # (text, expected intent, expected clarify, uses the parcel, forcedIntent, text expected in the reply)
 CASES = [
-    ("aslema", "salutation", False, False, None, "Aslema"),
+    ("aslema", "salutation", False, False, None, "عسلامة"),
     ("شنية الأخبار؟", "salutation", False, False, None, None),
-    ("fama jlid ghodwa fi beja?", "meteo_alerte", False, False, None, "beja"),
+    ("fama jlid ghodwa fi beja?", "meteo_alerte", False, False, None, "باجة"),
     ("9adech nesgi zitouni had el jem3a?", "irrigation", False, True, None, "Henchir Smoke"),
-    ("nbi3 el zit taw walla nestanna?", "prix_vente", False, False, None, "TND"),
+    ("nbi3 el zit taw walla nestanna?", "prix_vente", False, False, None, "دينار"),
     ("قداش يشريو اليوم بالكيلو في صفاقس؟", "prix_vente", False, False, None, None),
-    ("9adech bech njib zit had el 3am?", "recolte", False, True, None, "kg"),
-    ("a3tini 3adad el sjar elli fil taswira mel drone", "comptage", False, False, None, "taswira"),
+    ("9adech bech njib zit had el 3am?", "recolte", False, True, None, "كغ"),
+    ("a3tini 3adad el sjar elli fil taswira mel drone", "comptage", False, False, None, "تصويرة"),
     ("c'est quoi le problème mta3 el wra9 el sfor?", "maladie", False, False, None, "Diagnostic"),
     ("كيفاش نداوي الذبانة بطريقة طبيعية؟", "maladie", False, False, None, None),
     ("c'est quoi la différence bin zit vierge w extra vierge?", "conseil_general", False, False, None, None),
-    ("wa9tech yebda el bac?", "hors_sujet", False, False, None, "Sameh7ni"),
-    ("zitouni mouch labes", None, True, False, None, "Ma fhemtech"),  # domain guard
+    ("wa9tech yebda el bac?", "hors_sujet", False, False, None, "سامحني"),
+    ("zitouni mouch labes", None, True, False, None, "ما فهمتكش"),  # domain guard
     ("9adech 3andi?", "comptage", False, True, "comptage", None),  # suggestion button clicked
 ]
+
+
+def arabic_share(text: str) -> float:
+    """Replies are always in Arabic script; Latin is tolerated for names ("Henchir Smoke", « Diagnostic »)."""
+    arabic, latin = len(re.findall(r"[ء-ي]", text)), len(re.findall(r"[A-Za-zÀ-ÿ]", text))
+    return arabic / max(arabic + latin, 1)
 
 
 def call(method: str, path: str, body=None, token=None):
@@ -87,6 +94,8 @@ def main() -> int:
         # LLM replies are free text: the expected words are only checked on template replies.
         if expected_text and not llm and expected_text.lower() not in res["reply"].lower():
             problems.append(f"reply does not contain {expected_text!r}")
+        if arabic_share(res["reply"]) < 0.6:
+            problems.append(f"reply not in Arabic script ({arabic_share(res['reply']):.0%} Arabic letters)")
         if not res["reply"].strip():
             problems.append("empty reply")
         failures += bool(problems)

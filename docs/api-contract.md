@@ -175,13 +175,13 @@ Backend `POST /api/ai/chat` response:
 
 ```json
 {
-  "reply": "Ma fama 7atta tanbih mta3 jlid fi Beja el 7 ayyam ejjayin, w fama chwaya chatri nhar 12 octobre. (données de démo)",
+  "reply": "ما فماش حتى تنبيه متاع جليد في باجة السبعة أيام الجايين، وفما شوية شتا نهار 12 أكتوبر. (معطيات تجريبية)",
   "intent": "meteo_alerte", "clarify": false, "suggestions": [], "data": [ { "…": "Alert" } ], "mock": true,
   "generatedBy": "gemini/gemini-2.5-flash"
 }
 ```
 
-With `clarify: true`, `reply` is the question and `suggestions` the intents to show as buttons; clicking one resends the same `text` with `forcedIntent`. `generatedBy` is `"template"` when no LLM wrote the reply.
+With `clarify: true`, `reply` is the question and `suggestions` the intents to show as buttons; clicking one resends the same `text` with `forcedIntent`. `generatedBy` is `"template"` when no LLM wrote the reply. Every `reply` (LLM or template) is Tunisian derja in **Arabic script**, whatever the script of the question (arabizi, Arabic, French).
 
 `POST /answer` — the LLM writes the reply from the facts gathered by the backend (rotation across free APIs, see `app/llm.py`). `503` when no LLM is configured or all fail: the backend then uses its template reply.
 
@@ -191,12 +191,12 @@ With `clarify: true`, `reply` is the question and `suggestions` the intents to s
   "facts": [ { "source": "M3", "mock": true, "data": { "estimation_parcelle_kg_olives": 7500 } },
              { "source": "M4", "mock": true, "data": { "prix_huile_aujourdhui_tnd_kg": 12.72, "conseil": "STORE" } } ],
   "parcel": { "name": "Henchir Sfax", "governorate": "Sfax", "treeCount": 250, "areaHa": 2.5 },
-  "draft": "Saba mta3 Sfax (mawsem 2026/2027) ≈ 504000 tonne zitoun. …"
+  "draft": "صابة صفاقس (موسم 2026/2027) ≈ 504000 طن زيتون. …"
 }
 ```
 
 ```json
-{ "answer": "Lel parcelle mte3ek n9addrou 7500 kg zitoun… (données de démo)", "provider": "gemini", "model": "gemini-3.5-flash", "latencyMs": 1420 }
+{ "answer": "للقطعة متاعك نقدرو 7500 كغ زيتون… (معطيات تجريبية)", "provider": "gemini", "model": "gemini-3.5-flash", "latencyMs": 1420 }
 ```
 
 Facts per intent (backend `ChatService.ENRICH`): `meteo_alerte` = M2 alerts + irrigation plan, `recolte` = M3 + M4, `prix_vente` = M4 + M3, `maladie` = latest M1 diagnosis from the history. Only facts and the parcel profile are sent to the LLM, never personal data.

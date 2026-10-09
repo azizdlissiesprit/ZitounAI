@@ -1,10 +1,10 @@
 package tn.zitouna.ai.assistant.modules;
 
-/** Shared chat texts (derja, arabizi). */
+/** Shared chat texts (Tunisian derja, Arabic script). */
 final class Replies {
 
     static final String ASK_LOCATION =
-            "9olli fi ena wileya (mathalan: Sfax) walla ikhtar parcelle bech nejawbek 3la blastek.";
+            "قلّي في أنا ولاية (مثلا: صفاقس) ولا اختار قطعة باش نجاوبك على بلاصتك.";
 
     private Replies() {
     }

@@ -38,11 +38,12 @@ import tn.zitouna.parcel.ParcelService;
 @RequiredArgsConstructor
 public class ChatService {
 
-    static final String GREETING = "Aslema! Na3ref n3awnek fil mardh mta3 el zitoun, el sgi, el ta9s, el saba, "
-            + "el soum w 3add el zitoun. Chnowa sou2alek?";
-    static final String OFF_TOPIC = "Sameh7ni, ana n3awen ken fil fla7a mta3 el zitoun. "
-            + "Jarreb mathalan: '9adech nesgi zitouni had el jem3a?'";
-    static final String MODULE_DOWN = "Sameh7ni, ma najamtech nejawbek tawa. 3awed ba3d chwaya.";
+    // Replies are always Tunisian derja in Arabic script, whatever the script of the question.
+    static final String GREETING = "عسلامة! نعرف نعاونك في مرض الزيتون، السقي، الطقس، الصابة، "
+            + "السوم وعدد الزيتون. شنوة سؤالك؟";
+    static final String OFF_TOPIC = "سامحني، أنا نعاون كان في فلاحة الزيتون. "
+            + "جرّب مثلا: «قداش نسقي زيتوني الجمعة هاذي؟»";
+    static final String MODULE_DOWN = "سامحني، ما نجمتش نجاوبك توا. عاود بعد شوية.";
 
     /** Complementary modules whose facts enrich the answer (their failure is ignored). */
     static final Map<Intent, List<Intent>> ENRICH = Map.of(

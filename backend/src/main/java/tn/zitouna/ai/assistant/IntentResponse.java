@@ -20,7 +20,7 @@ public record IntentResponse(
         boolean mock) implements AiResult {
 
     public static final String GENERIC_QUESTION =
-            "Ma fhemtech mli7. Sou2alek 3al mardh, el sgi, el ta9s, el saba, el soum walla 3add el zitoun?";
+            "ما فهمتكش مليح. سؤالك على المرض، السقي، الطقس، الصابة، السوم ولا عدد الزيتون؟";
 
     public record Candidate(Intent intent, double score) {
     }

@@ -7,10 +7,11 @@ import httpx
 import pytest
 
 from app.llm import AllProvidersFailed, LlmRouter, Model, build_chain
-from app.prompt import build_messages
+from app.prompt import build_messages, is_arabic_script
 from app.schemas import AnswerRequest
 
-OK = {"choices": [{"message": {"content": "Esgi zitounek 3 marrat had el jem3a."}, "finish_reason": "stop"}]}
+OK = {"choices": [{"message": {"content": "اسقي زيتونك 3 مرات الجمعة هاذي."}, "finish_reason": "stop"}]}
+ARABIZI = {"choices": [{"message": {"content": "Esgi zitounek 3 marrat had el jem3a."}, "finish_reason": "stop"}]}
 
 
 def models(*names: str) -> list[Model]:
@@ -36,7 +37,7 @@ def router_with(responses: dict[str, httpx.Response | Exception], **kwargs) -> t
 def test_first_model_answers():
     router, calls = router_with({"a": httpx.Response(200, json=OK), "b": httpx.Response(200, json=OK)})
     done = router.complete([{"role": "user", "content": "x"}])
-    assert (done.model, done.text, calls) == ("a", "Esgi zitounek 3 marrat had el jem3a.", ["a"])
+    assert (done.model, done.text, calls) == ("a", "اسقي زيتونك 3 مرات الجمعة هاذي.", ["a"])
 
 
 @pytest.mark.parametrize(
@@ -55,6 +56,27 @@ def test_truncated_answer_counts_as_failure():
     cut = {"choices": [{"message": {"content": "Aslema, l"}, "finish_reason": "length"}]}
     router, _ = router_with({"a": httpx.Response(200, json=cut), "b": httpx.Response(200, json=OK)})
     assert router.complete([{"role": "user", "content": "x"}]).model == "b"
+
+
+def test_rejected_answer_moves_to_next_model_without_cooldown():
+    router, calls = router_with({"a": httpx.Response(200, json=ARABIZI), "b": httpx.Response(200, json=OK)})
+    assert router.complete([], accept=is_arabic_script).model == "b"
+    assert router.complete([]).model == "a"  # no cooldown: "a" is fine for answers that need no check
+    assert calls == ["a", "b", "a"]
+
+
+@pytest.mark.parametrize(
+    ("text", "arabic"),
+    [
+        ("اسقي زيتونك 3 مرات الجمعة هاذي.", True),
+        ("في القطعة « Henchir Smoke » لازمك تسقي 6 مرات، ابعثلي تصويرة من صفحة « Diagnostic ».", True),
+        ("Esgi zitounek 3 marrat had el jem3a.", False),
+        ("Il faut irriguer 3 fois cette semaine.", False),
+        ("12.5 TND", False),
+    ],
+)
+def test_is_arabic_script(text, arabic):
+    assert is_arabic_script(text) is arabic
 
 
 def test_all_failing_raises():
@@ -125,4 +147,4 @@ def test_live_answer_in_derja():
     req = AnswerRequest(question="9adech nesgi zitouni had el jem3a?", intent="irrigation", facts=[fact])
     done = LlmRouter(build_chain()).complete(build_messages(req))
     print(f"\n{done.provider}/{done.model} {done.latency_ms} ms: {done.text}")
-    assert "6" in done.text
+    assert "6" in done.text and is_arabic_script(done.text)

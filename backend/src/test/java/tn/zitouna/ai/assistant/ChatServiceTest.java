@@ -190,11 +190,11 @@ class ChatServiceTest {
         Fact m2 = Fact.of("M2", true, "jours_irrigation_sur_7", 6);
         when(irrigationService.answer(any())).thenReturn(new ModuleAnswer("template reply", "plan", true, List.of(m2)));
         when(answerClient.answer(any())).thenReturn(Optional.of(
-                new AnswerClient.Answer("Esgi 6 marrat had el jem3a. (données de démo)", "gemini", "gemini-3.5-flash", 900)));
+                new AnswerClient.Answer("اسقي 6 مرات الجمعة هاذي. (معطيات تجريبية)", "gemini", "gemini-3.5-flash", 900)));
 
         ChatResponse res = chatService.chat(USER, new ChatRequest("9adech nesgi?", null, null));
 
-        assertThat(res.reply()).isEqualTo("Esgi 6 marrat had el jem3a. (données de démo)");
+        assertThat(res.reply()).isEqualTo("اسقي 6 مرات الجمعة هاذي. (معطيات تجريبية)");
         assertThat(res.generatedBy()).isEqualTo("gemini/gemini-3.5-flash");
         assertThat(res.data()).isEqualTo("plan");
         ArgumentCaptor<AnswerClient.Request> sent = ArgumentCaptor.forClass(AnswerClient.Request.class);

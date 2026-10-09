@@ -12,13 +12,13 @@ public class TreeCountChatStub implements TreeCountService {
     public ModuleAnswer answer(ChatContext ctx) {
         // TODO(M6): when the chat accepts images, call TreeCountClient.count(image) and answer with treeCount.
         if (ctx.parcel() != null && ctx.parcel().getTreeCount() != null) {
-            String reply = "Fil parcelle « %s » msajlin %d zitouna. Bech n3awed na7sebhom, ab3athli taswira mel drone walla satellite fil page mta3 el parcelle."
+            String reply = "في القطعة « %s » مسجلين %d زيتونة. باش نعاود نحسبهم، ابعثلي تصويرة من الدرون ولا الساتليت في صفحة القطعة."
                     .formatted(ctx.parcel().getName(), ctx.parcel().getTreeCount());
             Fact fact = Fact.of("parcelle", false, "nombre_arbres_enregistre", ctx.parcel().getTreeCount(),
                     "comment_recompter", "envoyer une image drone ou satellite dans la page de la parcelle");
             return new ModuleAnswer(reply, null, true, List.of(fact));
         }
         return ModuleAnswer.stub(
-                "Ab3athli taswira mel drone walla satellite fil page mta3 el parcelle, w ena n7asbelek 3add el zitoun.");
+                "ابعثلي تصويرة من الدرون ولا الساتليت في صفحة القطعة، وأنا نحسبلك عدد الزيتون.");
     }
 }

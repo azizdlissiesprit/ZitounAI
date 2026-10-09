@@ -10,6 +10,6 @@ public class RagChatStub implements RagService {
     public ModuleAnswer answer(ChatContext ctx) {
         // TODO(M5): call the RAG endpoint of the M5 service (Chroma + LLM) with ctx.text() and return the
         //  answer with its sources in data.
-        return ModuleAnswer.stub("(Jaweb tajribi) Ba3d chwaya bech nejawbek mel guides mta3 FAO, COI w wizaret el fla7a.");
+        return ModuleAnswer.stub("(جواب تجريبي) بعد شوية باش نجاوبك من أدلة FAO و COI ووزارة الفلاحة.");
     }
 }

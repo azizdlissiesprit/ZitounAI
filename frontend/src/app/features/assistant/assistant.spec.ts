@@ -38,7 +38,7 @@ describe('Assistant', () => {
     const first = backend.expectOne('/api/ai/chat');
     expect(first.request.body).toEqual({ text: '9adech 3andi?', parcelId: null, forcedIntent: null });
     first.flush({
-      reply: 'T7eb ta3ref 9adech mn chajra 3andek?',
+      reply: 'تحب تعرف قداش من شجرة عندك؟',
       intent: 'recolte',
       clarify: true,
       suggestions: ['recolte', 'comptage'],
@@ -51,7 +51,7 @@ describe('Assistant', () => {
     const bubbles: HTMLElement[] = Array.from(fixture.nativeElement.querySelectorAll('.bubble'));
     expect(bubbles.every((b) => b.getAttribute('dir') === 'auto')).toBe(true);
     const buttons: HTMLButtonElement[] = Array.from(fixture.nativeElement.querySelectorAll('.suggestions button'));
-    expect(buttons.map((b) => b.textContent?.trim())).toEqual(['Récolte (saba)', "Nombre d'arbres (3add)"]);
+    expect(buttons.map((b) => b.textContent?.trim())).toEqual(['الصابة', 'عدد الزيتون']);
 
     buttons[1].click();
     await fixture.whenStable();

@@ -21,19 +21,16 @@ DOMAIN_WORDS = [
 AR_PREFIXES = ("وال", "بال", "فال", "لل", "ال", "و", "ب", "ف", "ل")
 
 GENERIC = "generic"
+# Shown to the farmer: Tunisian derja in Arabic script (all chat answers are in Arabic script).
 QUESTIONS = {
-    GENERIC: "Ma fhemtech mli7. Sou2alek 3al mardh, el sgi, el ta9s, el saba, el soum walla 3add el zitoun?",
-    frozenset({"recolte", "comptage"}): (
-        "T7eb ta3ref 9adech mn chajra 3andek, walla 9adech bech tjib mn zitoun w zit?"
-    ),
-    frozenset({"irrigation", "recolte"}): "Sou2alek 3al el ma (el sgi) walla 3al el saba (el jni)?",
-    frozenset({"irrigation", "meteo_alerte"}): "T7eb el ta9s, walla 9adech tesgi?",
-    frozenset({"prix_vente", "recolte"}): "T7eb ta3ref el soum, walla 9adech bech tjib?",
-    frozenset({"conseil_general", "maladie"}): (
-        "Fama mardh 3al zitouna? Ab3athli taswira mta3 war9a. Walla t7eb nasi7a 3amma?"
-    ),
-    frozenset({"conseil_general", "irrigation"}): "Sou2alek 3al 9adech tesgi, walla 3al mo3eddet el sgi?",
-    frozenset({"conseil_general", "recolte"}): "T7eb ta3ref 9adech bech tjib, walla kifech ta3mel el jni?",
+    GENERIC: "ما فهمتكش مليح. سؤالك على المرض، السقي، الطقس، الصابة، السوم ولا عدد الزيتون؟",
+    frozenset({"recolte", "comptage"}): "تحب تعرف قداش من شجرة عندك، ولا قداش باش تجيب من زيتون وزيت؟",
+    frozenset({"irrigation", "recolte"}): "سؤالك على الماء (السقي) ولا على الصابة (الجني)؟",
+    frozenset({"irrigation", "meteo_alerte"}): "تحب تعرف الطقس، ولا قداش تسقي؟",
+    frozenset({"prix_vente", "recolte"}): "تحب تعرف السوم، ولا قداش باش تجيب؟",
+    frozenset({"conseil_general", "maladie"}): "فما مرض على الزيتونة؟ ابعثلي تصويرة متاع ورقة. ولا تحب نصيحة عامة؟",
+    frozenset({"conseil_general", "irrigation"}): "سؤالك على قداش تسقي، ولا على معدات السقي؟",
+    frozenset({"conseil_general", "recolte"}): "تحب تعرف قداش باش تجيب، ولا كيفاش تعمل الجني؟",
 }
 CONFUSABLE_MARGIN = 0.15
 

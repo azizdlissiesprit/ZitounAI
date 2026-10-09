@@ -19,9 +19,10 @@ public record ChatContext(Long userId, String text, Parcel parcel, String govern
                     parcel.getLatitude(), parcel.getLongitude()));
         }
         return Governorates.coordinates(governorate)
-                .map(c -> new Location(governorate, governorate, c[0], c[1]));
+                .map(c -> new Location(Governorates.arabic(governorate), governorate, c[0], c[1]));
     }
 
+    /** label: shown in replies (parcel name, or Arabic governorate name); governorate: id sent to the modules. */
     public record Location(String label, String governorate, double latitude, double longitude) {
     }
 }

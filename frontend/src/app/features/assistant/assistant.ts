@@ -7,16 +7,17 @@ import { ParcelService } from '../../core/api/parcel.service';
 import { errorMessage } from '../../shared/errors';
 import { MockBadge } from '../../shared/mock-badge';
 
+/** Shown on the suggestion buttons and under the replies: derja in Arabic script, like the replies. */
 export const INTENT_LABELS: Record<Intent, string> = {
-  maladie: 'Maladie (mardh)',
-  irrigation: 'Irrigation (sgi)',
-  meteo_alerte: 'Météo (ta9s)',
-  recolte: 'Récolte (saba)',
-  prix_vente: 'Prix (soum)',
-  comptage: "Nombre d'arbres (3add)",
-  conseil_general: 'Conseil général',
-  salutation: 'Salutation',
-  hors_sujet: 'Hors sujet',
+  maladie: 'مرض الزيتون',
+  irrigation: 'السقي',
+  meteo_alerte: 'الطقس',
+  recolte: 'الصابة',
+  prix_vente: 'السوم',
+  comptage: 'عدد الزيتون',
+  conseil_general: 'نصيحة عامة',
+  salutation: 'سلام',
+  hors_sujet: 'خارج الموضوع',
 };
 
 interface Message {
@@ -38,7 +39,7 @@ interface Message {
   imports: [FormsModule, MockBadge],
   template: `
     <h1>Assistant</h1>
-    <p class="muted">Posez votre question en derja (arabe ou arabizi) ou en français.</p>
+    <p class="muted">Posez votre question en derja (arabe ou arabizi) ou en français : Zitouna répond en derja, en lettres arabes.</p>
 
     <section class="card chat">
       @for (m of messages(); track $index) {
@@ -64,7 +65,7 @@ interface Message {
         <p class="muted" dir="auto">Exemples : « 9adech nesgi zitouni had el jem3a? » · « قداش يشريو الزيت اليوم؟ »</p>
       }
       @if (loading()) {
-        <p class="muted">Zitouna tekteb…</p>
+        <p class="muted" dir="rtl">زيتونة تكتب…</p>
       }
     </section>
 

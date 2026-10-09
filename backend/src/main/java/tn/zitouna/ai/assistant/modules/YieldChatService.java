@@ -26,12 +26,12 @@ public class YieldChatService implements YieldService {
         YieldResult y = yieldClient.predict(
                 new YieldClient.Request(location.governorate(), YieldClient.currentSeason(), trees));
 
-        String reply = String.format(Locale.ROOT, "Saba mta3 %s (mawsem %d/%d) ≈ %.0f tonne zitoun.",
-                y.governorate(), y.season(), y.season() + 1, y.regionalProductionTonnes());
+        String reply = String.format(Locale.ROOT, "صابة %s (موسم %d/%d) ≈ %.0f طن زيتون.",
+                Governorates.arabic(y.governorate()), y.season(), y.season() + 1, y.regionalProductionTonnes());
         reply += y.parcelEstimateKg() != null
-                ? String.format(Locale.ROOT, " Lel parcelle « %s » (%d chajra): ≈ %.0f kg zitoun (bin %.0f w %.0f).",
+                ? String.format(Locale.ROOT, " للقطعة « %s » (%d شجرة): ≈ %.0f كغ زيتون (بين %.0f و %.0f).",
                         location.label(), trees, y.parcelEstimateKg(), y.parcelLowKg(), y.parcelHighKg())
-                : " Ikhtar parcelle fiha 3add el zitoun bech na7seblek saba mte3ek.";
+                : " اختار قطعة فيها عدد الزيتون باش نحسبلك صابتك.";
         Fact fact = Fact.of("M3", y.mock(),
                 "gouvernorat", y.governorate(),
                 "saison", y.season() + "/" + (y.season() + 1),

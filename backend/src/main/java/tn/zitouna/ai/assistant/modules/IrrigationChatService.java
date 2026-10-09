@@ -33,10 +33,10 @@ public class IrrigationChatService implements IrrigationService {
                 .map(IrrigationResult.Day::litersPerTree).filter(l -> l != null).findFirst().orElse(null);
 
         String reply = days == 0
-                ? "Fi %s ma tesga7ech tesgi el 7 ayyem ejjeyin.".formatted(location.label())
-                : String.format(Locale.ROOT, "Fi %s, el 7 ayyem ejjeyin: lazmek tesgi %d marrat, el 7aja el kol ≈ %.0f mm%s.",
+                ? "في %s ما تستحقش تسقي السبعة أيام الجايين.".formatted(location.label())
+                : String.format(Locale.ROOT, "في %s، السبعة أيام الجايين: لازمك تسقي %d مرات، الحاجة الكل ≈ %.0f مم%s.",
                         location.label(), days, totalMm,
-                        liters == null ? "" : String.format(Locale.ROOT, " (≈ %.0f litre lel chajra fil marra)", liters));
+                        liters == null ? "" : String.format(Locale.ROOT, " (≈ %.0f لتر للشجرة في كل مرة)", liters));
         Fact fact = Fact.of("M2", plan.mock(),
                 "lieu", location.label(),
                 "jours_irrigation_sur_7", days,

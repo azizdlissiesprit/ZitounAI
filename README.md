@@ -73,6 +73,10 @@ docker compose up --build
 | AI services Swagger UI | http://localhost:8001/docs … http://localhost:8006/docs |
 | PostgreSQL | `localhost:5432`, db `zitouna`, user/password from `.env` |
 
+Ports already used on your machine (e.g. a local PostgreSQL on 5432, Oracle on 8080)? Set `DB_PORT`, `BACKEND_PORT`, `FRONTEND_PORT` in `.env`.
+
+Check the chat end to end (app → backend → M5 → modules): `python scripts/smoke_chat.py http://localhost:8080`
+
 ## Local development (one part at a time)
 
 Run only what you don't work on in Docker, and your part from your IDE. Example for the backend owner:

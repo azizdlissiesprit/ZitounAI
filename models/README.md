@@ -1,6 +1,17 @@
 # Trained models
 
-Weights are **not in Git**. Upload them to the shared Drive folder `zitouna-ai/models/` and copy them here. `docker-compose.yml` mounts this folder read-only into each AI container at `/models`.
+Weights are **not in Git**. They are shared through one private Hugging Face model repo, with the same folders as here. `docker-compose.yml` mounts this folder read-only into each AI container at `/models`.
+
+```bash
+pip install huggingface_hub
+# in .env: HF_MODELS_REPO=<user-or-org>/zitouna-models and HF_TOKEN=hf_... (huggingface.co/settings/tokens)
+python scripts/models.py list                 # what is on the Hub
+python scripts/models.py pull                 # download everything into models/
+python scripts/models.py push m5_ensemble     # module owner: upload after (re)training
+docker compose restart                        # the services load the new weights at startup
+```
+
+To give teammates access to the private repo, create a free Hugging Face **organization**, move the repo into it (`HF_MODELS_REPO=<org>/zitouna-models`) and invite them; each one uses their own token.
 
 | Module | Expected file | Loaded by |
 |---|---|---|

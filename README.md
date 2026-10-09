@@ -36,7 +36,7 @@ The full contract (every endpoint, every JSON field) is in [docs/api-contract.md
 ├── ai-services/          one FastAPI service per module (m1-disease … m6-tree-count)
 ├── notebooks/            one folder per module: data exploration + training
 ├── data/                 raw/ and processed/ datasets (NOT in Git, shared on Drive)
-├── models/               trained weights mounted into the AI containers (NOT in Git)
+├── models/               trained weights mounted into the AI containers (NOT in Git, on Hugging Face)
 ├── docs/                 API contract, report material
 ├── docker-compose.yml    the whole stack
 └── .github/              CI, PR / issue templates, CODEOWNERS
@@ -63,8 +63,11 @@ Prerequisites: Docker Desktop, Git.
 git clone https://github.com/azizdlissiesprit/ZitounAI.git zitouna-ai
 cd zitouna-ai
 cp .env.example .env          # then put a long random JWT_SECRET in .env
+python scripts/models.py pull # optional: trained models (needs HF_* in .env, see models/README.md)
 docker compose up --build
 ```
+
+Without the models, the AI services run in mock mode (`"mock": true`): everything works, with demo data.
 
 | What | URL |
 |---|---|

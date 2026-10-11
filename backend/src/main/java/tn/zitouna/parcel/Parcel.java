@@ -4,6 +4,8 @@ import java.time.Instant;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -47,8 +49,20 @@ public class Parcel {
 
     private Double areaHa;
 
-    /** Filled manually or by M6 (tree counting). */
+    /** Filled manually or by M6 (tree counting). Read by M3 (expected harvest). */
     private Integer treeCount;
+
+    /** Trees per hectare from the last M6 count (null if unknown). */
+    private Double densityPerHa;
+
+    /** True when the density was estimated from an assumed crown size (no scale given). */
+    private Boolean densityEstimated;
+
+    private Instant treeCountedAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private TreeCountSource treeCountSource;
 
     /** e.g. "Chemlali", "Chetoui". */
     @Column(length = 60)

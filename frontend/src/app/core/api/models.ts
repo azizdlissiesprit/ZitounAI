@@ -21,12 +21,22 @@ export interface Parcel {
   longitude: number;
   areaHa: number | null;
   treeCount: number | null;
+  /** Last M6 count (null if unknown); densityEstimated: from an assumed crown size. */
+  densityPerHa: number | null;
+  densityEstimated: boolean | null;
+  treeCountedAt: string | null;
+  treeCountSource: TreeCountSource | null;
   variety: string | null;
   irrigated: boolean;
   createdAt: string;
 }
 
-export type ParcelRequest = Omit<Parcel, 'id' | 'createdAt'>;
+export type TreeCountSource = 'MODEL' | 'CORRECTED' | 'MANUAL';
+
+export type ParcelRequest = Omit<
+  Parcel,
+  'id' | 'createdAt' | 'densityPerHa' | 'densityEstimated' | 'treeCountedAt' | 'treeCountSource'
+>;
 
 /** Every AI result has `mock: true` while the module has no trained model yet. */
 interface AiResult {
@@ -118,14 +128,52 @@ export interface ChatResponse extends AiResult {
   data: unknown;
   /** "gemini/gemini-3.5-flash" when an LLM wrote the reply, "template" otherwise. */
   generatedBy: string;
+  /** Button opening a page of the app (e.g. tree counting), or null. */
+  link: { label: string; url: string } | null;
 }
 
-// M6
+// M6 · boxes in pixels of the uploaded image
+export interface TreeBox {
+  id: number;
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  score: number;
+}
+
 export interface TreeCountResult extends AiResult {
-  treeCount: number;
-  boxes: { x: number; y: number; width: number; height: number; confidence: number }[];
-  annotatedImageBase64: string | null;
+  count: number;
+  boxes: TreeBox[];
+  zoomUsed: number | null;
+  zoomTrials: { zoom: number; n: number; score: number; crownPx: number }[];
+  densityPerHa: number | null;
+  /** true: no scale given, density from an assumed 5 m crown. */
+  densityEstimated: boolean;
+  areaHa: number | null;
+  gsdM: number | null;
+  meanCrownM2: number | null;
+  imageSize: { width: number; height: number };
+  warnings: string[];
+  annotatedImage: string | null;
+  processingMs: number;
   modelVersion: string;
+}
+
+export interface TreeCountOptions {
+  /** Parcel outline [[x, y], ...] in image pixels; none = whole image. */
+  polygon?: [number, number][];
+  gsdM?: number;
+  areaHa?: number;
+  zoom?: number;
+}
+
+export interface TreeCountSave {
+  count: number;
+  densityPerHa: number | null;
+  densityEstimated: boolean;
+  /** true if the farmer removed or added boxes. */
+  corrected: boolean;
 }
 
 // M6 -> M3 -> M4

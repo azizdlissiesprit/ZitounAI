@@ -24,6 +24,10 @@ export const routes: Routes = [
         path: 'diagnosis',
         loadComponent: () => import('./features/diagnosis/diagnosis').then((m) => m.Diagnosis),
       },
+      {
+        path: 'tree-count',
+        loadComponent: () => import('./features/tree-count/tree-count').then((m) => m.TreeCount),
+      },
       { path: 'price', loadComponent: () => import('./features/price/price').then((m) => m.Price) },
       {
         path: 'assistant',

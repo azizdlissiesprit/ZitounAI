@@ -71,7 +71,7 @@ public class ChatService {
 
         ChatResponse response = nlu.clarify()
                 ? new ChatResponse(nlu.question(), nlu.intent(), true, suggestions(nlu), null, nlu.mock(),
-                        ChatResponse.TEMPLATE)
+                        ChatResponse.TEMPLATE, null)
                 : route(nlu, new ChatContext(userId, request.text(), parcel, governorate(nlu)));
 
         historyService.record(userId, request.parcelId(), PredictionType.CHAT, request, response);
@@ -82,14 +82,15 @@ public class ChatService {
         Intent intent = nlu.intent();
         if (intent == Intent.SALUTATION || intent == Intent.HORS_SUJET) {
             // Fixed, instant answers: no module, no LLM.
-            return answer(intent, intent == Intent.SALUTATION ? GREETING : OFF_TOPIC, null, false, ChatResponse.TEMPLATE);
+            return answer(intent, intent == Intent.SALUTATION ? GREETING : OFF_TOPIC, ModuleAnswer.stub(null), false,
+                    ChatResponse.TEMPLATE);
         }
         ModuleAnswer module;
         try {
             module = call(intent, ctx);
         } catch (AiServiceException e) {
             log.warn("Module for intent {} failed: {}", intent, e.getMessage());
-            return answer(intent, MODULE_DOWN, null, nlu.mock(), ChatResponse.TEMPLATE);
+            return answer(intent, MODULE_DOWN, ModuleAnswer.stub(null), nlu.mock(), ChatResponse.TEMPLATE);
         }
 
         List<Fact> facts = new ArrayList<>(module.facts());
@@ -108,8 +109,8 @@ public class ChatService {
 
         var llm = answerClient.answer(new AnswerClient.Request(ctx.text(), intent, facts, parcelInfo(ctx), module.reply()));
         return llm.isPresent()
-                ? answer(intent, llm.get().answer(), module.data(), mock, llm.get().generatedBy())
-                : answer(intent, module.reply(), module.data(), mock, ChatResponse.TEMPLATE);
+                ? answer(intent, llm.get().answer(), module, mock, llm.get().generatedBy())
+                : answer(intent, module.reply(), module, mock, ChatResponse.TEMPLATE);
     }
 
     private ModuleAnswer call(Intent intent, ChatContext ctx) {
@@ -125,8 +126,9 @@ public class ChatService {
         };
     }
 
-    private static ChatResponse answer(Intent intent, String reply, Object data, boolean mock, String generatedBy) {
-        return new ChatResponse(reply, intent, false, List.of(), data, mock, generatedBy);
+    private static ChatResponse answer(Intent intent, String reply, ModuleAnswer module, boolean mock,
+            String generatedBy) {
+        return new ChatResponse(reply, intent, false, List.of(), module.data(), mock, generatedBy, module.link());
     }
 
     private static AnswerClient.Parcel parcelInfo(ChatContext ctx) {

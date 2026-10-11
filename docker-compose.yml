@@ -7,7 +7,7 @@
 x-ai-service: &ai-service
   restart: unless-stopped
   volumes:
-    - ./models:/models:ro # trained weights, shared via Drive (not in Git)
+    - ./models:/models:ro # trained weights (not in Git): python scripts/models.py pull
 
 services:
   postgres:
@@ -45,6 +45,7 @@ services:
       AI_M4_URL: http://m4-price:8000
       AI_M5_URL: http://m5-assistant:8000
       AI_M6_URL: http://m6-tree-count:8000
+      AI_M6_TIMEOUT: ${AI_M6_TIMEOUT:-PT60S} # automatic zoom on CPU can take tens of seconds
     ports:
       - "${BACKEND_PORT:-8080}:8080"
 
@@ -107,7 +108,8 @@ services:
     <<: *ai-service
     build: ./ai-services/m6-tree-count
     environment:
-      MODEL_DIR: /models/m6
+      MODEL_DIR: /models/m6 # best.pt (YOLO11n) + config.json (tiles, zooms, thresholds)
+      TORCH_THREADS: ${M6_TORCH_THREADS:-4} # CPU cores used by one detection
     ports:
       - "8006:8000"
 

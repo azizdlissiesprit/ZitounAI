@@ -94,6 +94,8 @@ def main() -> int:
         # LLM replies are free text: the expected words are only checked on template replies.
         if expected_text and not llm and expected_text.lower() not in res["reply"].lower():
             problems.append(f"reply does not contain {expected_text!r}")
+        if res["intent"] == "comptage" and not (res.get("link") or {}).get("url", "").startswith("/tree-count"):
+            problems.append("comptage reply without the link to the tree counting page")
         if arabic_share(res["reply"]) < 0.6:
             problems.append(f"reply not in Arabic script ({arabic_share(res['reply']):.0%} Arabic letters)")
         if not res["reply"].strip():

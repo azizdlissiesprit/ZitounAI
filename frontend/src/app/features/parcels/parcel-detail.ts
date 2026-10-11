@@ -1,17 +1,17 @@
 import { DecimalPipe } from '@angular/common';
 import { Component, effect, inject, input, numberAttribute, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { Observable } from 'rxjs';
 
 import { AiService } from '../../core/api/ai.service';
-import { HarvestPlan, IrrigationResult, Parcel, TreeCountResult, YieldResult } from '../../core/api/models';
+import { HarvestPlan, IrrigationResult, Parcel, TreeCountSource, YieldResult } from '../../core/api/models';
 import { ParcelService } from '../../core/api/parcel.service';
 import { errorMessage, fileFrom } from '../../shared/errors';
 import { MockBadge } from '../../shared/mock-badge';
 
 @Component({
   selector: 'app-parcel-detail',
-  imports: [DecimalPipe, MockBadge],
+  imports: [DecimalPipe, MockBadge, RouterLink],
   template: `
     @if (parcel(); as p) {
       <div class="page-header">
@@ -68,16 +68,23 @@ import { MockBadge } from '../../shared/mock-badge';
 
       <!-- M6 -->
       <section class="card">
-        <h2>Compter les oliviers <small>M6</small></h2>
-        <p class="muted">Image drone ou capture satellite de la parcelle.</p>
-        <input type="file" accept="image/*" (change)="countTrees($event)" />
-        @if (trees(); as t) {
-          <app-mock-badge [mock]="t.mock" />
-          <p><strong>{{ t.treeCount }}</strong> arbres détectés</p>
-          @if (t.annotatedImageBase64) {
-            <img class="preview" [src]="'data:image/png;base64,' + t.annotatedImageBase64" alt="Arbres détectés" />
+        <h2>Nombre d'oliviers <small>M6</small></h2>
+        @if (parcel(); as p) {
+          @if (p.treeCount !== null) {
+            <p>
+              <strong>{{ p.treeCount }}</strong> arbres
+              @if (p.densityPerHa !== null) {
+                · {{ p.densityPerHa | number: '1.0-1' }} arbres/ha{{ p.densityEstimated ? ' (estimée)' : '' }}
+              }
+            </p>
+            @if (p.treeCountSource) {
+              <p class="muted">{{ sourceLabels[p.treeCountSource] }} · {{ p.treeCountedAt?.slice(0, 10) }}</p>
+            }
+          } @else {
+            <p class="muted">Pas encore compté.</p>
           }
         }
+        <a class="btn" routerLink="/tree-count" [queryParams]="{ parcel: id() }">Compter sur une image</a>
       </section>
 
       <!-- M6 -> M3 -> M4 -->
@@ -107,7 +114,11 @@ export class ParcelDetail {
   protected readonly error = signal<string | null>(null);
   protected readonly irrigation = signal<IrrigationResult | null>(null);
   protected readonly yieldResult = signal<YieldResult | null>(null);
-  protected readonly trees = signal<TreeCountResult | null>(null);
+  protected readonly sourceLabels: Record<TreeCountSource, string> = {
+    MODEL: 'Compté par le modèle',
+    CORRECTED: 'Compté par le modèle, corrigé à la main',
+    MANUAL: 'Saisi à la main',
+  };
   protected readonly plan = signal<HarvestPlan | null>(null);
   protected planImage?: File;
   protected readonly fileFrom = fileFrom;
@@ -127,19 +138,6 @@ export class ParcelDetail {
     this.error.set(null);
     call.subscribe({
       next: (result) => target.set(result),
-      error: (err) => this.error.set(errorMessage(err)),
-    });
-  }
-
-  countTrees(event: Event): void {
-    const file = fileFrom(event);
-    if (!file) return;
-    this.error.set(null);
-    this.ai.countTrees(this.id(), file).subscribe({
-      next: (result) => {
-        this.trees.set(result);
-        this.loadParcel(this.id());
-      },
       error: (err) => this.error.set(errorMessage(err)),
     });
   }

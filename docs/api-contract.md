@@ -32,8 +32,9 @@ Base URL `/api`. All endpoints except `/api/auth/**` need `Authorization: Bearer
 | GET | `/parcels/{id}/irrigation` | | `IrrigationResult` | M2 |
 | GET | `/parcels/{id}/yield` | optional `?season=2026` | `YieldResult` | M3 |
 | GET | `/ai/price` | `?horizonWeeks=8&quantityKg=` | `PriceResult` | M4 |
-| POST | `/ai/chat` | `{text, parcelId?, forcedIntent?}` | `{reply, intent, clarify, suggestions, data, mock, generatedBy}` | M5 → M1…M6 / RAG → LLM |
-| POST | `/parcels/{id}/count-trees` | multipart `image` | `TreeCountResult` (also saves `treeCount` on the parcel when not mock) | M6 |
+| POST | `/ai/chat` | `{text, parcelId?, forcedIntent?}` | `{reply, intent, clarify, suggestions, data, mock, generatedBy, link}` | M5 → M1…M6 / RAG → LLM |
+| POST | `/parcels/{id}/tree-count` | multipart `image` + optional `polygon`, `gsdM`, `areaHa`, `zoom`, `annotated` | `TreeCountResult`, **not saved** (the farmer reviews the boxes first) | M6 |
+| PUT | `/parcels/{id}/tree-count` | `{count, densityPerHa, densityEstimated, corrected}` | `Parcel` (with `treeCount`, `densityPerHa`, `treeCountSource` = `MODEL` / `CORRECTED`, `treeCountedAt`) | — |
 | POST | `/parcels/{id}/harvest-plan` | optional multipart `image` | `HarvestPlan` | M6 → M3 → M4 |
 | GET | `/history` | `?type=DISEASE&page=0&size=20` | `{content: Prediction[], page, size, totalElements, totalPages}` | — |
 
@@ -181,7 +182,7 @@ Backend `POST /api/ai/chat` response:
 }
 ```
 
-With `clarify: true`, `reply` is the question and `suggestions` the intents to show as buttons; clicking one resends the same `text` with `forcedIntent`. `generatedBy` is `"template"` when no LLM wrote the reply. Every `reply` (LLM or template) is Tunisian derja in **Arabic script**, whatever the script of the question (arabizi, Arabic, French).
+With `clarify: true`, `reply` is the question and `suggestions` the intents to show as buttons; clicking one resends the same `text` with `forcedIntent`. `link` (`{label, url}` or `null`) is a button to a page of the app: `comptage` links to `/tree-count?parcel=ID`. `generatedBy` is `"template"` when no LLM wrote the reply. Every `reply` (LLM or template) is Tunisian derja in **Arabic script**, whatever the script of the question (arabizi, Arabic, French).
 
 `POST /answer` — the LLM writes the reply from the facts gathered by the backend (rotation across free APIs, see `app/llm.py`). `503` when no LLM is configured or all fail: the backend then uses its template reply.
 
@@ -203,15 +204,31 @@ Facts per intent (backend `ChatService.ENRICH`): `meteo_alerte` = M2 alerts + ir
 
 ### M6
 
-`POST /predict` — multipart field `image` (drone or satellite view of a parcel).
+`POST /count-trees` — multipart: `image` (JPEG or PNG, top view: drone, satellite, Google Earth; 15 MB max → `413`, other type → `415`), and optional fields:
+
+| Field | Meaning |
+|---|---|
+| `polygon` | parcel outline, JSON `[[x, y], ...]` in pixels of the image (≥ 3 points): only the trees whose **center** is inside count. None: the whole image |
+| `gsdM` | meters per pixel of the image: exact surface and crown sizes |
+| `areaHa` | parcel area, when `gsdM` is unknown: density = count / area |
+| `zoom` | forces one zoom instead of the automatic one |
+| `annotated` | `true`: also returns a PNG (base64) with the boxes in red and the polygon in blue |
 
 ```json
 {
-  "treeCount": 42,
-  "boxes": [ { "x": 120.0, "y": 64.0, "width": 30.0, "height": 30.0, "confidence": 0.91 } ],
-  "annotatedImageBase64": "iVBORw0KGgo…",
-  "modelVersion": "mock", "mock": true
+  "count": 142,
+  "boxes": [ { "id": 0, "x1": 120.5, "y1": 88.0, "x2": 154.2, "y2": 119.7, "score": 0.91 } ],
+  "zoomUsed": 2.0,
+  "zoomTrials": [ { "zoom": 1.0, "n": 98, "score": 0.61, "crownPx": 18.0 } ],
+  "densityPerHa": 18.3, "densityEstimated": false, "areaHa": 7.76, "gsdM": 0.1, "meanCrownM2": 21.5,
+  "imageSize": { "width": 1024, "height": 683 },
+  "warnings": [],
+  "annotatedImage": null,
+  "processingMs": 2350, "modelVersion": "m6-yolo11n", "mock": false
 }
 ```
 
-Box coordinates are in pixels of the (possibly downscaled, max 1280 px) image.
+- Boxes are in pixels of the uploaded image (images over 4000 px are reduced for the detection, the boxes are scaled back).
+- Without `gsdM` nor `areaHa`: the scale is estimated from the median crown size, assuming a 5 m crown → `densityEstimated: true` + a warning.
+- `warnings` (French, shown as is): tilted photo, no tree found, very small image (< 200 px), estimated density, forced zoom impossible.
+- Automatic zoom (`config.json`: `auto_zoom`, `zoom_rule: "x1_if_reliable"`, `x1_ratio: 0.8`): zoom ×1 is kept if its score is ≥ 0.8 (then no other zoom is tried) or ≥ 0.8 × the best score of all zooms; otherwise the median count of the zooms scoring ≥ 90 % of the best. On CPU this takes ~5 s for a 1600 × 1200 image, up to tens of seconds for big ones: the backend timeout is 60 s (`AI_M6_TIMEOUT`).

@@ -10,8 +10,11 @@ import {
   PageResponse,
   PredictionRecord,
   PredictionType,
+  Parcel,
   PriceResult,
+  TreeCountOptions,
   TreeCountResult,
+  TreeCountSave,
   YieldResult,
 } from './models';
 
@@ -47,9 +50,19 @@ export class AiService {
     return this.http.post<ChatResponse>('/api/ai/chat', request);
   }
 
-  /** M6 */
-  countTrees(parcelId: number, image: File) {
-    return this.http.post<TreeCountResult>(`/api/parcels/${parcelId}/count-trees`, imageForm(image));
+  /** M6 step 1: count the trees on the image. Nothing is saved (the farmer reviews the boxes first). */
+  countTrees(parcelId: number, image: File, options: TreeCountOptions = {}) {
+    const form = imageForm(image);
+    if (options.polygon?.length) form.append('polygon', JSON.stringify(options.polygon));
+    if (options.gsdM) form.append('gsdM', String(options.gsdM));
+    if (options.areaHa) form.append('areaHa', String(options.areaHa));
+    if (options.zoom) form.append('zoom', String(options.zoom));
+    return this.http.post<TreeCountResult>(`/api/parcels/${parcelId}/tree-count`, form);
+  }
+
+  /** M6 step 2: save the final (possibly corrected) count on the parcel. */
+  saveTreeCount(parcelId: number, body: TreeCountSave) {
+    return this.http.put<Parcel>(`/api/parcels/${parcelId}/tree-count`, body);
   }
 
   /** M6 -> M3 -> M4. Without image, the parcel's saved tree count is used. */

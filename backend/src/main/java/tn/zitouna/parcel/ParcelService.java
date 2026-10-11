@@ -1,6 +1,8 @@
 package tn.zitouna.parcel;
 
+import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -48,9 +50,17 @@ public class ParcelService {
         parcels.delete(getOwned(userId, parcelId));
     }
 
+    /** Saves a tree count (M6, possibly corrected by the farmer) on the parcel. */
     @Transactional
-    public void updateTreeCount(Long userId, Long parcelId, int treeCount) {
-        getOwned(userId, parcelId).setTreeCount(treeCount);
+    public ParcelDto saveTreeCount(Long userId, Long parcelId, int treeCount, Double densityPerHa,
+            boolean densityEstimated, TreeCountSource source) {
+        Parcel parcel = getOwned(userId, parcelId);
+        parcel.setTreeCount(treeCount);
+        parcel.setDensityPerHa(densityPerHa);
+        parcel.setDensityEstimated(densityPerHa == null ? null : densityEstimated);
+        parcel.setTreeCountedAt(Instant.now());
+        parcel.setTreeCountSource(source);
+        return ParcelDto.from(parcel);
     }
 
     private static void apply(Parcel parcel, ParcelRequest r) {
@@ -59,7 +69,14 @@ public class ParcelService {
         parcel.setLatitude(r.latitude());
         parcel.setLongitude(r.longitude());
         parcel.setAreaHa(r.areaHa());
-        parcel.setTreeCount(r.treeCount());
+        if (!Objects.equals(parcel.getTreeCount(), r.treeCount())) {
+            // typed in the form: the density of the last M6 count no longer matches
+            parcel.setTreeCount(r.treeCount());
+            parcel.setDensityPerHa(null);
+            parcel.setDensityEstimated(null);
+            parcel.setTreeCountedAt(r.treeCount() == null ? null : Instant.now());
+            parcel.setTreeCountSource(r.treeCount() == null ? null : TreeCountSource.MANUAL);
+        }
         parcel.setVariety(r.variety());
         parcel.setIrrigated(r.irrigated());
     }

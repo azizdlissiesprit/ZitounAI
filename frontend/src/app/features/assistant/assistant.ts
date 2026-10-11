@@ -1,5 +1,6 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 
 import { AiService } from '../../core/api/ai.service';
 import { ChatResponse, Intent, Parcel } from '../../core/api/models';
@@ -30,13 +31,15 @@ interface Message {
   /** Clarification: buttons to pick the intent, and the question they apply to. */
   suggestions?: Intent[];
   originalText?: string;
+  /** Button opening a page of the app (e.g. tree counting). */
+  link?: { label: string; url: string };
   answered?: boolean;
 }
 
 /** M5 · Derja assistant (the backend routes questions to M1-M4, M6 or the RAG) */
 @Component({
   selector: 'app-assistant',
-  imports: [FormsModule, MockBadge],
+  imports: [FormsModule, MockBadge, RouterLink],
   template: `
     <h1>Assistant</h1>
     <p class="muted">Posez votre question en derja (arabe ou arabizi) ou en français : Zitouna répond en derja, en lettres arabes.</p>
@@ -50,6 +53,13 @@ interface Message {
           }
           @if (m.mock) {
             <app-mock-badge [mock]="true" />
+          }
+          @if (m.link) {
+            <div class="suggestions">
+              <a class="btn btn-ghost" [routerLink]="linkPath(m.link.url)" [queryParams]="linkQuery(m.link.url)">
+                {{ m.link.label }}
+              </a>
+            </div>
           }
           @if (m.suggestions?.length) {
             <div class="suggestions">
@@ -125,6 +135,15 @@ export class Assistant implements OnInit {
     });
   }
 
+  /** "/tree-count?parcel=3" -> "/tree-count" and { parcel: "3" } for routerLink. */
+  protected linkPath(url: string): string {
+    return url.split('?')[0];
+  }
+
+  protected linkQuery(url: string): Record<string, string> {
+    return Object.fromEntries(new URLSearchParams(url.split('?')[1] ?? ''));
+  }
+
   private push(message: Message): void {
     this.messages.update((list) => [...list, message]);
   }
@@ -133,7 +152,14 @@ export class Assistant implements OnInit {
 function toMessage(r: ChatResponse, originalText: string): Message {
   return r.clarify
     ? { from: 'bot', text: r.reply, intent: r.intent, mock: r.mock, suggestions: r.suggestions, originalText }
-    : { from: 'bot', text: r.reply, intent: r.intent, mock: r.mock, llm: llmName(r.generatedBy) };
+    : {
+        from: 'bot',
+        text: r.reply,
+        intent: r.intent,
+        mock: r.mock,
+        llm: llmName(r.generatedBy),
+        link: r.link ?? undefined,
+      };
 }
 
 /** "gemini/gemini-3.5-flash" -> "gemini-3.5-flash"; template replies show nothing. */

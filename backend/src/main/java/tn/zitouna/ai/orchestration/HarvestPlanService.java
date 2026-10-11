@@ -19,6 +19,7 @@ import tn.zitouna.history.HistoryService;
 import tn.zitouna.history.PredictionType;
 import tn.zitouna.parcel.Parcel;
 import tn.zitouna.parcel.ParcelService;
+import tn.zitouna.parcel.TreeCountSource;
 
 /**
  * The flagship chain of the demo: the farmer uploads a parcel image, M6 counts the trees,
@@ -45,12 +46,13 @@ public class HarvestPlanService {
         int treeCount;
         String source;
         if (parcelImage != null && !parcelImage.isEmpty()) {
-            TreeCountResult counted = treeCountClient.count(parcelImage);
-            treeCount = counted.treeCount();
+            TreeCountResult counted = treeCountClient.count(parcelImage, TreeCountClient.Options.NONE);
+            treeCount = counted.count();
             source = "M6";
             mock |= counted.mock();
             if (!counted.mock()) {
-                parcelService.updateTreeCount(userId, parcelId, treeCount);
+                parcelService.saveTreeCount(userId, parcelId, treeCount, counted.densityPerHa(),
+                        counted.densityEstimated(), TreeCountSource.MODEL);
             }
         } else if (parcel.getTreeCount() != null) {
             treeCount = parcel.getTreeCount();

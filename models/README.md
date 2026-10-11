@@ -20,6 +20,6 @@ To give teammates access to the private repo, create a free Hugging Face **organ
 | M3 | `models/m3/model.joblib` | `ai-services/m3-yield/app/predictor.py` |
 | M4 | `models/m4/sarima.pkl` | `ai-services/m4-price/app/predictor.py` |
 | M5 | `models/m5_ensemble/` (`config.json`, `tfidf.joblib`, `setfit/`) | `ai-services/m5-assistant/app/predictor.py` |
-| M6 | `models/m6/best.pt` | `ai-services/m6-tree-count/app/predictor.py` |
+| M6 | `models/m6/` (`best.pt`, `config.json`) | `ai-services/m6-tree-count/app/predictor.py` |
 
 If a file is missing, the service runs in mock mode (`"mock": true`). Put the model version (e.g. the MLflow run id) in the `MODEL_VERSION` environment variable.

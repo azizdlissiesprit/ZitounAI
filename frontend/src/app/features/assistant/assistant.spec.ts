@@ -45,6 +45,7 @@ describe('Assistant', () => {
       data: null,
       mock: false,
       generatedBy: 'template',
+      link: null,
     } satisfies ChatResponse);
     await fixture.whenStable();
 
@@ -58,5 +59,25 @@ describe('Assistant', () => {
     const second = backend.expectOne('/api/ai/chat');
     expect(second.request.body).toEqual({ text: '9adech 3andi?', parcelId: null, forcedIntent: 'comptage' });
     backend.verify();
+  });
+
+  it('shows the link of the reply as a button to the app page', async () => {
+    const fixture = render();
+    await ask(fixture, '9adech 3andi mn zitouna?');
+    backend.expectOne('/api/ai/chat').flush({
+      reply: 'ابعثلي تصويرة من الفوق (درون ولا ساتليت) متاع أرضك، ونوريك قداش فيها من زيتونة.',
+      intent: 'comptage',
+      clarify: false,
+      suggestions: [],
+      data: null,
+      mock: false,
+      generatedBy: 'template',
+      link: { label: 'افتح صفحة عدّ الزيتون', url: '/tree-count?parcel=3' },
+    } satisfies ChatResponse);
+    await fixture.whenStable();
+
+    const link: HTMLAnchorElement = fixture.nativeElement.querySelector('.suggestions a');
+    expect(link.textContent?.trim()).toBe('افتح صفحة عدّ الزيتون');
+    expect(link.getAttribute('href')).toBe('/tree-count?parcel=3');
   });
 });

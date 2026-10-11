@@ -290,3 +290,62 @@ table {
   gap: 1rem;
   align-items: center;
 }
+
+/* M6 tree counting: canvas drawn over the image, in its displayed size */
+.tc-stage {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    border-radius: 6px;
+  }
+  canvas {
+    position: absolute;
+    inset: 0;
+    cursor: crosshair;
+  }
+}
+
+.tc-layout {
+  grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+  @media (max-width: 800px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.tc-count {
+  font-size: 3rem;
+  font-weight: 700;
+  margin: 0;
+  small {
+    font-size: 1rem;
+    font-weight: 400;
+  }
+}
+
+.tc-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.spinner {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  border: 2px solid var(--border);
+  border-top-color: var(--olive);
+  border-radius: 50%;
+  vertical-align: middle;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

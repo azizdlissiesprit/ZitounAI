@@ -12,6 +12,7 @@ import { AuthService } from '../core/auth/auth.service';
       <nav>
         <a routerLink="/parcels" routerLinkActive="active">Parcelles</a>
         <a routerLink="/diagnosis" routerLinkActive="active">Diagnostic</a>
+        <a routerLink="/tree-count" routerLinkActive="active">Comptage</a>
         <a routerLink="/price" routerLinkActive="active">Prix</a>
         <a routerLink="/assistant" routerLinkActive="active">Assistant</a>
         <a routerLink="/history" routerLinkActive="active">Historique</a>

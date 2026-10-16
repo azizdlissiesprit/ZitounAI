@@ -18,6 +18,14 @@
 		<springdoc.version>3.1.1</springdoc.version>
 	</properties>
 	<dependencies>
+		<!-- Requis par Spring Framework 7 pour l'envoi multipart (AiServiceClient.postImage) :
+		     sans lui, NoClassDefFoundError org/reactivestreams/Publisher -> erreur 500 sur
+		     tous les endpoints image (M1 diagnostic, M6 comptage, harvest-plan). -->
+		<dependency>
+			<groupId>org.reactivestreams</groupId>
+			<artifactId>reactive-streams</artifactId>
+			<version>1.0.4</version>
+		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-actuator</artifactId>

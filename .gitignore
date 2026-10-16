@@ -8,6 +8,8 @@ data/processed/**
 !data/**/.gitkeep
 models/*
 !models/README.md
+notebooks/**/outputs/
+notebooks/**/field_test/
 *.pt
 *.pth
 *.onnx

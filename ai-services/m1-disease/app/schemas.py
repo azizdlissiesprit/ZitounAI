@@ -17,3 +17,9 @@ class DiseaseResponse(CamelModel):
     heatmap_base64: str | None = None  # Grad-CAM overlay (PNG, base64), optional
     model_version: str
     mock: bool
+    # Additif M1 (ne casse pas le backend : le DTO Spring ignore les champs inconnus).
+    # Vrai quand la confiance calibrée < 0.70 : « advice » contient alors le message
+    # « photo peu claire, reprenez-la » — c'est ce champ advice, prévu par le contrat,
+    # que le frontend affiche. À coordonner avec le responsable backend si on veut le
+    # faire remonter jusqu'à l'app.
+    low_confidence: bool = False
